@@ -1,0 +1,14 @@
+# Archivos de configuracion de Visual Studio
+/.vs
+*.pyproj
+*.sln
+*.json
+
+# Otros archivos temporales
+__pycache__/
+*.pyc
+*.user
+
+# Ignorar entornos virtuales
+env/
+venv/
