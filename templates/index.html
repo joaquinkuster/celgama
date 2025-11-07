@@ -151,6 +151,7 @@
       justify-content: center;
       font-size: 1.2rem;
       margin-right: 15px;
+      flex-shrink: 0;
     }
 
     .step-title {
@@ -171,6 +172,7 @@
       display: block;
       margin-bottom: 10px;
       font-weight: 500;
+      color: var(--dark);
     }
 
     .input-group {
@@ -188,7 +190,7 @@
     .input-field input,
     .input-field select {
       width: 100%;
-      padding: 15px 20px;
+      padding: 15px 45px 15px 20px;
       border: 2px solid #e9ecef;
       border-radius: var(--border-radius);
       font-size: 1rem;
@@ -203,9 +205,15 @@
       box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
     }
 
-    .input-field input:focus+.input-icon,
-    .input-field select:focus+.input-icon {
-      color: var(--primary);
+    .input-field input.error {
+      border-color: #dc3545;
+      animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
     }
 
     .input-icon {
@@ -215,6 +223,12 @@
       transform: translateY(-50%);
       color: var(--secondary);
       transition: var(--transition);
+      pointer-events: none;
+    }
+
+    .input-field input:focus ~ .input-icon,
+    .input-field select:focus ~ .input-icon {
+      color: var(--primary);
     }
 
     .checkbox-group {
@@ -222,15 +236,20 @@
       align-items: center;
       gap: 10px;
       margin-top: 10px;
+      padding: 15px;
+      background: var(--light);
+      border-radius: var(--border-radius);
     }
 
     .checkbox-group input {
       width: 20px;
       height: 20px;
+      cursor: pointer;
     }
 
     .checkbox-group label {
       cursor: pointer;
+      font-weight: 500;
     }
 
     .form-navigation {
@@ -249,6 +268,11 @@
     .btn-secondary:hover {
       background: var(--secondary);
       color: white;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .progress-container {
@@ -382,6 +406,12 @@
       box-shadow: var(--shadow);
     }
 
+    .chart-container img {
+      width: 100%;
+      height: auto;
+      border-radius: var(--border-radius);
+    }
+
     .chart-placeholder {
       height: 300px;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -397,6 +427,15 @@
       text-align: left;
       margin-top: 30px;
       line-height: 1.6;
+    }
+
+    .explanation h3 {
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+
+    .explanation p {
+      margin-bottom: 15px;
     }
 
     .hidden {
@@ -468,18 +507,22 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="num_cores">Núcleos del procesador</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="num_cores" name="num_cores" placeholder=" " min="1" max="16" required>
-                <label class="form-label" for="num_cores">Núcleos del procesador</label>
+                <input type="number" id="num_cores" name="num_cores" min="1" max="16" required>
                 <div class="input-icon">
                   <i class="fas fa-server"></i>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="processor_speed">Velocidad del procesador (GHz)</label>
+            <div class="input-group">
               <div class="input-field">
-                <input type="number" id="processor_speed" name="processor_speed" placeholder=" " step="0.1" min="1.0"
-                  max="4.0" required>
-                <label class="form-label" for="processor_speed">Velocidad (GHz)</label>
+                <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="1.0" max="4.0" required>
                 <div class="input-icon">
                   <i class="fas fa-tachometer-alt"></i>
                 </div>
@@ -510,20 +553,20 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="battery_capacity">Capacidad de la batería (mAh)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="battery_capacity" name="battery_capacity" placeholder=" " min="1000"
-                  max="10000" required>
-                <label class="form-label" for="battery_capacity">Capacidad (mAh)</label>
+                <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required>
                 <div class="input-icon">
                   <i class="fas fa-bolt"></i>
                 </div>
               </div>
             </div>
-            <div class="checkbox-group">
-              <input type="checkbox" id="fast_charging_available" name="fast_charging_available" value="1">
-              <label for="fast_charging_available">Incluye carga rápida</label>
-            </div>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="fast_charging_available" name="fast_charging_available" value="1">
+            <label for="fast_charging_available">Incluye carga rápida</label>
           </div>
 
           <div class="form-navigation">
@@ -549,18 +592,22 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="ram_capacity">Memoria RAM (GB)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="ram_capacity" name="ram_capacity" placeholder=" " min="1" max="16" required>
-                <label class="form-label" for="ram_capacity">RAM (GB)</label>
+                <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="16" required>
                 <div class="input-icon">
                   <i class="fas fa-memory"></i>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="internal_memory">Almacenamiento interno (GB)</label>
+            <div class="input-group">
               <div class="input-field">
-                <input type="number" id="internal_memory" name="internal_memory" placeholder=" " min="8" max="512"
-                  required>
-                <label class="form-label" for="internal_memory">Almacenamiento (GB)</label>
+                <input type="number" id="internal_memory" name="internal_memory" min="8" max="512" required>
                 <div class="input-icon">
                   <i class="fas fa-hdd"></i>
                 </div>
@@ -591,29 +638,34 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="screen_size">Tamaño de la pantalla (pulgadas)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="screen_size" name="screen_size" placeholder=" " step="0.1" min="4.0" max="7.5"
-                  required>
-                <label class="form-label" for="screen_size">Tamaño (pulgadas)</label>
+                <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required>
                 <div class="input-icon">
                   <i class="fas fa-mobile-alt"></i>
                 </div>
               </div>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resolution_width">Resolución horizontal (px)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="resolution_width" name="resolution_width" placeholder=" " min="720" max="3840"
-                  required>
-                <label class="form-label" for="resolution_width">Resolución horizontal (px)</label>
+                <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required>
                 <div class="input-icon">
                   <i class="fas fa-arrows-alt-h"></i>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resolution_height">Resolución vertical (px)</label>
+            <div class="input-group">
               <div class="input-field">
-                <input type="number" id="resolution_height" name="resolution_height" placeholder=" " min="1280"
-                  max="2160" required>
-                <label class="form-label" for="resolution_height">Resolución vertical (px)</label>
+                <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2160" required>
                 <div class="input-icon">
                   <i class="fas fa-arrows-alt-v"></i>
                 </div>
@@ -644,29 +696,34 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="num_rear_cameras">Número de cámaras traseras</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="num_rear_cameras" name="num_rear_cameras" placeholder=" " min="1" max="5"
-                  required>
-                <label class="form-label" for="num_rear_cameras">Nº cámaras traseras</label>
+                <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required>
                 <div class="input-icon">
                   <i class="fas fa-camera"></i>
                 </div>
               </div>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="primary_camera_rear">Megapíxeles cámara trasera principal</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="primary_camera_rear" name="primary_camera_rear" placeholder=" " min="8"
-                  max="108" required>
-                <label class="form-label" for="primary_camera_rear">MP cámara trasera principal</label>
+                <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="108" required>
                 <div class="input-icon">
                   <i class="fas fa-camera-retro"></i>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="primary_camera_front">Megapíxeles cámara frontal</label>
+            <div class="input-group">
               <div class="input-field">
-                <input type="number" id="primary_camera_front" name="primary_camera_front" placeholder=" " min="5"
-                  max="40" required>
-                <label class="form-label" for="primary_camera_front">MP cámara frontal</label>
+                <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="40" required>
                 <div class="input-icon">
                   <i class="fas fa-user-circle"></i>
                 </div>
@@ -697,10 +754,10 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="price">Precio estimado (USD)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="price" name="price" placeholder=" " min="50" max="2000" required>
-                <label class="form-label" for="price">Precio estimado (USD)</label>
+                <input type="number" id="price" name="price" min="50" max="2000" required>
                 <div class="input-icon">
                   <i class="fas fa-tag"></i>
                 </div>
@@ -737,7 +794,7 @@
 
       <div class="chart-container">
         <h3>Distribución de gamas</h3>
-        <div class="chart-placeholder">
+        <div id="chartContent" class="chart-placeholder">
           <i class="fas fa-chart-pie"></i> Gráfico de dispersión de gamas
         </div>
       </div>
@@ -745,7 +802,7 @@
       <div class="explanation">
         <h3>¿Por qué esta gama?</h3>
         <p>Basándonos en el análisis de tus especificaciones, hemos determinado que tu dispositivo se clasifica en la
-          gama <strong id="explanationGama">Media</strong>. Esta clasificación se realizó utilizando un algoritmo de
+          <strong id="explanationGama">Media</strong>. Esta clasificación se realizó utilizando un algoritmo de
           aprendizaje automático que compara tus especificaciones con una base de datos de más de 100 dispositivos.</p>
         <p>Los factores más determinantes para esta clasificación fueron: <strong id="keyFactors">el precio, la
             capacidad de la cámara y la memoria RAM</strong>.</p>
@@ -821,9 +878,6 @@
         // Mostrar el paso actual
         steps[stepIndex].classList.add('active');
 
-        // Actualizar estado de botones
-        updateButtonStates();
-
         // Actualizar progreso
         updateProgress();
 
@@ -837,33 +891,30 @@
         });
       }
 
-      // Actualizar estado de los botones de navegación
-      function updateButtonStates() {
-        // Botones "Anterior"
-        document.querySelectorAll('[id^="prevBtn"]').forEach((btn, index) => {
-          btn.disabled = index === 0;
-        });
-      }
-
       // Validar paso actual
       function validateStep(stepIndex) {
         const currentStepElement = steps[stepIndex];
         const inputs = currentStepElement.querySelectorAll('input[required]');
+        let isValid = true;
 
         for (let input of inputs) {
-          if (!input.value) {
-            input.focus();
-            anime({
-              targets: input,
-              translateX: [0, -10, 10, -10, 10, 0],
-              duration: 500,
-              easing: 'easeInOutSine'
-            });
-            return false;
+          if (!input.value || input.value.trim() === '') {
+            input.classList.add('error');
+            isValid = false;
+            
+            // Enfocar el primer campo con error
+            if (isValid === false) {
+              input.focus();
+            }
+            
+            // Remover clase de error después de 300ms
+            setTimeout(() => {
+              input.classList.remove('error');
+            }, 300);
           }
         }
 
-        return true;
+        return isValid;
       }
 
       // Inicializar
@@ -919,7 +970,7 @@
         }
       }
 
-      // Envío del formulario - ACTUALIZADO PARA FLASK
+      // Envío del formulario
       phoneForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -933,9 +984,18 @@
           // Obtener datos del formulario
           const formData = new FormData(phoneForm);
           const data = {};
+          
+          // Convertir FormData a objeto
           for (let [key, value] of formData.entries()) {
             data[key] = value;
           }
+          
+          // Asegurar que fast_charging_available tenga un valor
+          if (!data.fast_charging_available) {
+            data.fast_charging_available = '0';
+          }
+
+          console.log('Datos a enviar:', data);
 
           // Enviar datos a Flask
           fetch('/api/resultado', {
@@ -946,36 +1006,20 @@
             body: JSON.stringify(data)
           })
             .then(response => {
+              console.log('Status:', response.status);
               if (!response.ok) {
                 throw new Error('Error en la respuesta del servidor');
               }
               return response.json();
             })
             .then(resultado => {
+              console.log('Resultado recibido:', resultado);
               // Mostrar resultados
               mostrarResultado(resultado);
             })
             .catch(error => {
               console.error('Error:', error);
-              // En caso de error, mostrar datos de ejemplo
-              mostrarResultado({
-                gama: "Media",
-                promedio: {
-                  "Núcleos": 6,
-                  "Velocidad (GHz)": 2.2,
-                  "Batería (mAh)": 4000,
-                  "Carga rápida": "Sí",
-                  "RAM (GB)": 6,
-                  "Almacenamiento (GB)": 128,
-                  "Pantalla (pulg)": 6.1,
-                  "Resolución": "1080x2340",
-                  "Cámaras traseras": 3,
-                  "Cámara principal (MP)": 48,
-                  "Cámara frontal (MP)": 16,
-                  "Precio (USD)": 350
-                },
-                factores_clave: ["precio", "memoria RAM", "cámara principal"]
-              });
+              alert('Hubo un error al procesar tu solicitud. Por favor, intenta nuevamente.');
             })
             .finally(() => {
               // Restaurar botón
@@ -1016,11 +1060,14 @@
         });
       });
 
-      // Función para mostrar resultados - ACTUALIZADA
+      // Función para mostrar resultados
       function mostrarResultado(resultado) {
         // Actualizar elementos de resultado
         document.getElementById('resultGama').textContent = resultado.gama;
-        document.getElementById('explanationGama').textContent = resultado.gama.split(' ')[1]; // Extraer "Baja", "Media", "Alta"
+        
+        // Extraer el tipo de gama (Baja, Media, Alta)
+        const tipoGama = resultado.gama.replace('Gama ', '');
+        document.getElementById('explanationGama').textContent = tipoGama;
 
         // Formatear factores clave
         const factoresTexto = resultado.factores_clave.map(factor =>
@@ -1042,9 +1089,11 @@
         }
 
         // Actualizar gráfico si está disponible
+        const chartContent = document.getElementById('chartContent');
         if (resultado.grafico) {
-          const chartPlaceholder = document.querySelector('.chart-placeholder');
-          chartPlaceholder.innerHTML = `<img src="${resultado.grafico}" alt="Gráfico de análisis" style="width: 100%; height: 100%; object-fit: contain;">`;
+          chartContent.innerHTML = `<img src="${resultado.grafico}" alt="Gráfico de análisis">`;
+        } else {
+          chartContent.innerHTML = '<i class="fas fa-chart-pie"></i> Gráfico no disponible';
         }
 
         // Animación de transición a resultados
