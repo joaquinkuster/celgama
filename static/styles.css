@@ -1,0 +1,35 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f9f9f9;
+  color: #333;
+  text-align: center;
+}
+
+.intro {
+  margin-top: 100px;
+}
+
+button {
+  background: #0078d4;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+form {
+  display: none;
+  margin-top: 50px;
+}
+
+.step {
+  display: none;
+  margin-bottom: 30px;
+}
