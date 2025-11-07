@@ -20,8 +20,16 @@ print("\n1. Cargando dataset...")
 df = pd.read_csv('data/celulares.csv')
 print(f"   ✓ Dataset cargado: {len(df)} registros")
 
+# Convertir precios de INR a USD (1 USD = ~83 INR aproximadamente)
+INR_TO_USD = 83.0
+print(f"\n2. Convirtiendo precios de INR a USD (1 USD = {INR_TO_USD} INR)...")
+if 'price' in df.columns:
+    df['price'] = df['price'] / INR_TO_USD
+    print(f"   ✓ Precios convertidos")
+    print(f"   - Rango de precios: ${df['price'].min():.2f} - ${df['price'].max():.2f} USD")
+
 # Selección de características
-print("\n2. Seleccionando características...")
+print("\n3. Seleccionando características...")
 features = df[[
     'num_cores', 'processor_speed',
     'battery_capacity', 'fast_charging_available',
@@ -35,7 +43,7 @@ features = df[[
 features['fast_charging_available'] = features['fast_charging_available'].astype(int)
 
 # Verificar valores faltantes
-print("\n3. Verificando valores faltantes...")
+print("\n4. Verificando valores faltantes...")
 missing_values = features.isnull().sum()
 if missing_values.sum() > 0:
     print("   Valores faltantes por columna:")
@@ -48,13 +56,13 @@ else:
 print(f"   ✓ Dataset limpio: {len(features)} registros")
 
 # Escalado
-print("\n4. Escalando datos...")
+print("\n5. Escalando datos...")
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(features)
 print("   ✓ Datos escalados")
 
 # Reducir a 2 dimensiones para graficar
-print("\n5. Aplicando PCA...")
+print("\n6. Aplicando PCA...")
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_scaled)
 variance_explained = pca.explained_variance_ratio_
@@ -62,44 +70,46 @@ print(f"   ✓ PCA aplicado")
 print(f"   - Varianza explicada: {variance_explained[0]:.2%} y {variance_explained[1]:.2%}")
 
 # Clustering
-print("\n6. Entrenando modelo K-Means...")
+print("\n7. Entrenando modelo K-Means...")
 kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
 kmeans.fit(X_scaled)
 labels = kmeans.predict(X_scaled)
 print(f"   ✓ Modelo K-Means entrenado con {kmeans.n_clusters} clusters")
 
-# Mapeo de clusters a gama
-print("\n7. Mapeando clusters a gamas...")
-centroides = kmeans.cluster_centers_
-suma_centroides = centroides.sum(axis=1)
-
-# Ordenar clusters por la suma de sus centroides
-orden = pd.Series(suma_centroides).rank(method='dense').astype(int) - 1
-mapeo = {}
-for i, r in enumerate(orden):
-    if r == 0:
-        mapeo[i] = 'Gama Baja'
-    elif r == 1:
-        mapeo[i] = 'Gama Media'
-    else:
-        mapeo[i] = 'Gama Alta'
-
-print("   Mapeo de clusters:")
-for cluster, gama in mapeo.items():
-    count = (labels == cluster).sum()
-    print(f"   - Cluster {cluster} → {gama} ({count} dispositivos)")
-
-# Calcular promedios por cluster
-print("\n8. Calculando promedios por cluster...")
+# Mapeo de clusters a gama basado en precio promedio
+print("\n8. Mapeando clusters a gamas...")
 features_copy = features.copy()
 features_copy['cluster'] = labels
+
+# Calcular precio promedio por cluster
+precio_promedio = features_copy.groupby('cluster')['price'].mean().sort_values()
+mapeo = {}
+for idx, cluster in enumerate(precio_promedio.index):
+    if idx == 0:
+        mapeo[cluster] = 'Gama Baja'
+    elif idx == 1:
+        mapeo[cluster] = 'Gama Media'
+    else:
+        mapeo[cluster] = 'Gama Alta'
+
+print("   Mapeo de clusters:")
+for cluster, gama in sorted(mapeo.items()):
+    count = (labels == cluster).sum()
+    avg_price = features_copy[features_copy['cluster'] == cluster]['price'].mean()
+    print(f"   - Cluster {cluster} → {gama} ({count} dispositivos, ${avg_price:.2f} promedio)")
+
+# Calcular promedios por cluster
+print("\n9. Calculando promedios por cluster...")
 features_copy['gama'] = features_copy['cluster'].map(mapeo)
 promedios = features_copy.groupby('cluster').mean()
 promedios['gama'] = promedios.index.map(mapeo)
 promedios = promedios.reset_index()
 
+# Contar dispositivos por gama
+distribucion = features_copy.groupby('gama').size().to_dict()
+
 # Guardar modelos y datos
-print("\n9. Guardando modelos...")
+print("\n10. Guardando modelos...")
 try:
     joblib.dump(scaler, 'scaler.pkl')
     print("   ✓ scaler.pkl guardado")
@@ -123,6 +133,14 @@ try:
     pca_df.to_csv('pca_coords.csv', index=False)
     print("   ✓ pca_coords.csv guardado")
     
+    # Guardar distribución
+    joblib.dump(distribucion, 'distribucion_gamas.pkl')
+    print("   ✓ distribucion_gamas.pkl guardado")
+    
+    # Guardar datos completos del dataset procesado
+    features_copy.to_csv('dataset_procesado.csv', index=False)
+    print("   ✓ dataset_procesado.csv guardado")
+    
 except Exception as e:
     print(f"   ❌ Error guardando archivos: {e}")
     exit(1)
@@ -131,6 +149,12 @@ except Exception as e:
 print("\n" + "="*50)
 print("✅ Modelo entrenado y guardado exitosamente")
 print("="*50)
+print(f"\nTotal de dispositivos: {len(features_copy)}")
+print("\nDistribución por gama:")
+for gama, cantidad in sorted(distribucion.items()):
+    porcentaje = (cantidad / len(features_copy)) * 100
+    print(f"  - {gama}: {cantidad} dispositivos ({porcentaje:.1f}%)")
+
 print("\nEstadísticas por gama:")
 print("-"*50)
 

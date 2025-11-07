@@ -35,6 +35,41 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Fondo animado con smartphones */
+    .phone-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .floating-phone {
+      position: absolute;
+      font-size: 3rem;
+      opacity: 0.1;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    .floating-phone:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; animation-duration: 15s; }
+    .floating-phone:nth-child(2) { left: 80%; top: 40%; animation-delay: 2s; animation-duration: 18s; }
+    .floating-phone:nth-child(3) { left: 20%; top: 70%; animation-delay: 4s; animation-duration: 22s; }
+    .floating-phone:nth-child(4) { left: 70%; top: 10%; animation-delay: 6s; animation-duration: 20s; }
+    .floating-phone:nth-child(5) { left: 40%; top: 80%; animation-delay: 8s; animation-duration: 17s; }
+    .floating-phone:nth-child(6) { left: 90%; top: 70%; animation-delay: 3s; animation-duration: 19s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-30px) rotate(5deg); }
+      50% { transform: translateY(-60px) rotate(-5deg); }
+      75% { transform: translateY(-30px) rotate(3deg); }
     }
 
     .container {
@@ -45,6 +80,7 @@
       box-shadow: var(--shadow);
       overflow: hidden;
       position: relative;
+      z-index: 1;
     }
 
     .intro {
@@ -127,7 +163,6 @@
         opacity: 0;
         transform: translateY(20px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -187,8 +222,7 @@
       position: relative;
     }
 
-    .input-field input,
-    .input-field select {
+    .input-field input {
       width: 100%;
       padding: 15px 45px 15px 20px;
       border: 2px solid #e9ecef;
@@ -198,8 +232,7 @@
       background: white;
     }
 
-    .input-field input:focus,
-    .input-field select:focus {
+    .input-field input:focus {
       border-color: var(--primary);
       outline: none;
       box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
@@ -226,8 +259,7 @@
       pointer-events: none;
     }
 
-    .input-field input:focus ~ .input-icon,
-    .input-field select:focus ~ .input-icon {
+    .input-field input:focus ~ .input-icon {
       color: var(--primary);
     }
 
@@ -279,14 +311,15 @@
       margin-bottom: 30px;
     }
 
-    .progress-bar {
+    .progress-bar-container {
       height: 6px;
       background: #e9ecef;
       border-radius: 3px;
       overflow: hidden;
+      position: relative;
     }
 
-    .progress {
+    .progress-bar {
       height: 100%;
       background: var(--primary);
       width: 0%;
@@ -296,15 +329,18 @@
     .progress-steps {
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
+      margin-top: 15px;
       font-size: 0.85rem;
       color: var(--secondary);
+      position: relative;
     }
 
     .step-indicator {
       display: flex;
       align-items: center;
       flex-direction: column;
+      position: relative;
+      flex: 1;
     }
 
     .step-indicator.active {
@@ -318,18 +354,22 @@
     }
 
     .step-dot {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: white;
-      border: 2px solid #e9ecef;
-      margin-bottom: 5px;
+      border: 3px solid #e9ecef;
+      margin-bottom: 8px;
       transition: var(--transition);
+      position: relative;
+      z-index: 2;
     }
 
     .step-indicator.active .step-dot {
       background: var(--primary);
       border-color: var(--primary);
+      width: 18px;
+      height: 18px;
     }
 
     .result-container {
@@ -406,21 +446,15 @@
       box-shadow: var(--shadow);
     }
 
+    .chart-container h3 {
+      margin-bottom: 20px;
+      color: var(--primary);
+    }
+
     .chart-container img {
       width: 100%;
       height: auto;
       border-radius: var(--border-radius);
-    }
-
-    .chart-placeholder {
-      height: 300px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      border-radius: var(--border-radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--secondary);
-      font-size: 1.1rem;
     }
 
     .explanation {
@@ -439,7 +473,7 @@
     }
 
     .hidden {
-      display: none;
+      display: none !important;
     }
 
     @media (max-width: 768px) {
@@ -467,11 +501,25 @@
       .input-field {
         min-width: 100%;
       }
+
+      .floating-phone {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
 
 <body>
+  <!-- Fondo animado -->
+  <div class="phone-background">
+    <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
+  </div>
+
   <div class="container">
     <!-- Pantalla de inicio -->
     <div class="intro" id="introScreen">
@@ -485,21 +533,17 @@
     <!-- Formulario de preguntas -->
     <div class="form-container hidden" id="formScreen">
       <div class="progress-container">
-        <div class="progress-bar">
-          <div class="progress" id="progressBar"></div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar"></div>
         </div>
-        <div class="progress-steps" id="progressSteps">
-          <!-- Los indicadores de paso se generan dinámicamente -->
-        </div>
+        <div class="progress-steps" id="progressSteps"></div>
       </div>
 
       <form id="phoneForm">
         <!-- Paso 1: Procesador -->
         <div class="form-step active" id="step1">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-microchip"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-microchip"></i></div>
             <div>
               <h2 class="step-title">Procesador</h2>
               <p class="step-description">Características del procesador de tu celular</p>
@@ -511,9 +555,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="num_cores" name="num_cores" min="1" max="16" required>
-                <div class="input-icon">
-                  <i class="fas fa-server"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-server"></i></div>
               </div>
             </div>
           </div>
@@ -523,18 +565,16 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="1.0" max="4.0" required>
-                <div class="input-icon">
-                  <i class="fas fa-tachometer-alt"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-tachometer-alt"></i></div>
               </div>
             </div>
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn1" disabled>
+            <button type="button" class="btn btn-secondary" disabled>
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
-            <button type="button" class="btn" id="nextBtn1">
+            <button type="button" class="btn next-btn">
               Siguiente <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -543,9 +583,7 @@
         <!-- Paso 2: Batería -->
         <div class="form-step" id="step2">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-battery-full"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-battery-full"></i></div>
             <div>
               <h2 class="step-title">Batería</h2>
               <p class="step-description">Características de la batería</p>
@@ -557,9 +595,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required>
-                <div class="input-icon">
-                  <i class="fas fa-bolt"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-bolt"></i></div>
               </div>
             </div>
           </div>
@@ -570,10 +606,10 @@
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn2">
+            <button type="button" class="btn btn-secondary prev-btn">
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
-            <button type="button" class="btn" id="nextBtn2">
+            <button type="button" class="btn next-btn">
               Siguiente <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -582,9 +618,7 @@
         <!-- Paso 3: Memoria -->
         <div class="form-step" id="step3">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-memory"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-memory"></i></div>
             <div>
               <h2 class="step-title">Memoria</h2>
               <p class="step-description">Capacidad de memoria y almacenamiento</p>
@@ -596,9 +630,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="16" required>
-                <div class="input-icon">
-                  <i class="fas fa-memory"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-memory"></i></div>
               </div>
             </div>
           </div>
@@ -607,19 +639,17 @@
             <label class="form-label" for="internal_memory">Almacenamiento interno (GB)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="internal_memory" name="internal_memory" min="8" max="512" required>
-                <div class="input-icon">
-                  <i class="fas fa-hdd"></i>
-                </div>
+                <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required>
+                <div class="input-icon"><i class="fas fa-hdd"></i></div>
               </div>
             </div>
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn3">
+            <button type="button" class="btn btn-secondary prev-btn">
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
-            <button type="button" class="btn" id="nextBtn3">
+            <button type="button" class="btn next-btn">
               Siguiente <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -628,9 +658,7 @@
         <!-- Paso 4: Pantalla -->
         <div class="form-step" id="step4">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-mobile-alt"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-mobile-alt"></i></div>
             <div>
               <h2 class="step-title">Pantalla</h2>
               <p class="step-description">Características de la pantalla</p>
@@ -642,9 +670,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required>
-                <div class="input-icon">
-                  <i class="fas fa-mobile-alt"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-mobile-alt"></i></div>
               </div>
             </div>
           </div>
@@ -654,9 +680,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required>
-                <div class="input-icon">
-                  <i class="fas fa-arrows-alt-h"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-arrows-alt-h"></i></div>
               </div>
             </div>
           </div>
@@ -666,18 +690,16 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2160" required>
-                <div class="input-icon">
-                  <i class="fas fa-arrows-alt-v"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-arrows-alt-v"></i></div>
               </div>
             </div>
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn4">
+            <button type="button" class="btn btn-secondary prev-btn">
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
-            <button type="button" class="btn" id="nextBtn4">
+            <button type="button" class="btn next-btn">
               Siguiente <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -686,9 +708,7 @@
         <!-- Paso 5: Cámara -->
         <div class="form-step" id="step5">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-camera"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-camera"></i></div>
             <div>
               <h2 class="step-title">Cámara</h2>
               <p class="step-description">Características de las cámaras</p>
@@ -700,9 +720,7 @@
             <div class="input-group">
               <div class="input-field">
                 <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required>
-                <div class="input-icon">
-                  <i class="fas fa-camera"></i>
-                </div>
+                <div class="input-icon"><i class="fas fa-camera"></i></div>
               </div>
             </div>
           </div>
@@ -711,10 +729,8 @@
             <label class="form-label" for="primary_camera_rear">Megapíxeles cámara trasera principal</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="108" required>
-                <div class="input-icon">
-                  <i class="fas fa-camera-retro"></i>
-                </div>
+                <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required>
+                <div class="input-icon"><i class="fas fa-camera-retro"></i></div>
               </div>
             </div>
           </div>
@@ -723,19 +739,17 @@
             <label class="form-label" for="primary_camera_front">Megapíxeles cámara frontal</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="40" required>
-                <div class="input-icon">
-                  <i class="fas fa-user-circle"></i>
-                </div>
+                <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required>
+                <div class="input-icon"><i class="fas fa-user-circle"></i></div>
               </div>
             </div>
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn5">
+            <button type="button" class="btn btn-secondary prev-btn">
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
-            <button type="button" class="btn" id="nextBtn5">
+            <button type="button" class="btn next-btn">
               Siguiente <i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -744,9 +758,7 @@
         <!-- Paso 6: Precio -->
         <div class="form-step" id="step6">
           <div class="step-header">
-            <div class="step-icon">
-              <i class="fas fa-dollar-sign"></i>
-            </div>
+            <div class="step-icon"><i class="fas fa-dollar-sign"></i></div>
             <div>
               <h2 class="step-title">Precio</h2>
               <p class="step-description">Precio estimado del dispositivo</p>
@@ -757,16 +769,14 @@
             <label class="form-label" for="price">Precio estimado (USD)</label>
             <div class="input-group">
               <div class="input-field">
-                <input type="number" id="price" name="price" min="50" max="2000" required>
-                <div class="input-icon">
-                  <i class="fas fa-tag"></i>
-                </div>
+                <input type="number" id="price" name="price" min="50" required>
+                <div class="input-icon"><i class="fas fa-tag"></i></div>
               </div>
             </div>
           </div>
 
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn6">
+            <button type="button" class="btn btn-secondary prev-btn">
               <i class="fas fa-arrow-left"></i> Anterior
             </button>
             <button type="submit" class="btn" id="submitBtn">
@@ -787,25 +797,18 @@
 
       <div class="result-card">
         <h3>Características promedio de esta gama</h3>
-        <ul class="features-list" id="featuresList">
-          <!-- Las características se llenarán dinámicamente -->
-        </ul>
+        <ul class="features-list" id="featuresList"></ul>
       </div>
 
       <div class="chart-container">
-        <h3>Distribución de gamas</h3>
-        <div id="chartContent" class="chart-placeholder">
-          <i class="fas fa-chart-pie"></i> Gráfico de dispersión de gamas
-        </div>
+        <h3>Análisis de tu dispositivo</h3>
+        <div id="chartContent"></div>
       </div>
 
       <div class="explanation">
         <h3>¿Por qué esta gama?</h3>
-        <p>Basándonos en el análisis de tus especificaciones, hemos determinado que tu dispositivo se clasifica en la
-          <strong id="explanationGama">Media</strong>. Esta clasificación se realizó utilizando un algoritmo de
-          aprendizaje automático que compara tus especificaciones con una base de datos de más de 100 dispositivos.</p>
-        <p>Los factores más determinantes para esta clasificación fueron: <strong id="keyFactors">el precio, la
-            capacidad de la cámara y la memoria RAM</strong>.</p>
+        <p>Basándonos en el análisis de tus especificaciones utilizando un algoritmo de aprendizaje automático que compara tu dispositivo con una base de datos de <strong id="totalDispositivos">0</strong> celulares, hemos determinado que se clasifica en la <strong id="explanationGama">Media</strong>.</p>
+        <p>Los factores más determinantes para esta clasificación fueron: <strong id="keyFactors">el precio, la capacidad de la cámara y la memoria RAM</strong>.</p>
       </div>
 
       <div class="form-navigation" style="justify-content: center; margin-top: 40px;">
@@ -818,7 +821,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      // Elementos principales
       const introScreen = document.getElementById('introScreen');
       const formScreen = document.getElementById('formScreen');
       const resultScreen = document.getElementById('resultScreen');
@@ -828,7 +830,6 @@
       const progressSteps = document.getElementById('progressSteps');
       const restartBtn = document.getElementById('restartBtn');
 
-      // Configuración de pasos
       const steps = document.querySelectorAll('.form-step');
       const totalSteps = steps.length;
       let currentStep = 0;
@@ -836,17 +837,14 @@
       // Inicializar indicadores de progreso
       function initProgressSteps() {
         progressSteps.innerHTML = '';
-
         for (let i = 0; i < totalSteps; i++) {
           const stepIndicator = document.createElement('div');
           stepIndicator.className = 'step-indicator';
           if (i === 0) stepIndicator.classList.add('active');
-
           stepIndicator.innerHTML = `
-          <div class="step-dot"></div>
-          <span>Paso ${i + 1}</span>
-        `;
-
+            <div class="step-dot"></div>
+            <span>Paso ${i + 1}</span>
+          `;
           progressSteps.appendChild(stepIndicator);
         }
       }
@@ -856,7 +854,6 @@
         const progress = ((currentStep + 1) / totalSteps) * 100;
         progressBar.style.width = `${progress}%`;
 
-        // Actualizar indicadores
         const indicators = document.querySelectorAll('.step-indicator');
         indicators.forEach((indicator, index) => {
           indicator.classList.remove('active', 'completed');
@@ -870,18 +867,10 @@
 
       // Navegación entre pasos
       function showStep(stepIndex) {
-        // Ocultar todos los pasos
-        steps.forEach(step => {
-          step.classList.remove('active');
-        });
-
-        // Mostrar el paso actual
+        steps.forEach(step => step.classList.remove('active'));
         steps[stepIndex].classList.add('active');
-
-        // Actualizar progreso
         updateProgress();
 
-        // Animación de entrada
         anime({
           targets: steps[stepIndex],
           opacity: [0, 1],
@@ -901,19 +890,10 @@
           if (!input.value || input.value.trim() === '') {
             input.classList.add('error');
             isValid = false;
-            
-            // Enfocar el primer campo con error
-            if (isValid === false) {
-              input.focus();
-            }
-            
-            // Remover clase de error después de 300ms
-            setTimeout(() => {
-              input.classList.remove('error');
-            }, 300);
+            if (isValid === false) input.focus();
+            setTimeout(() => input.classList.remove('error'), 300);
           }
         }
-
         return isValid;
       }
 
@@ -921,9 +901,8 @@
       initProgressSteps();
       updateProgress();
 
-      // Event Listeners
+      // Botón comenzar
       startBtn.addEventListener('click', function () {
-        // Animación de salida de la pantalla de inicio
         anime({
           targets: introScreen,
           opacity: 0,
@@ -933,8 +912,6 @@
           complete: function () {
             introScreen.classList.add('hidden');
             formScreen.classList.remove('hidden');
-
-            // Animación de entrada del formulario
             anime({
               targets: formScreen,
               opacity: [0, 1],
@@ -946,92 +923,100 @@
         });
       });
 
-      // Botones "Siguiente"
-      for (let i = 1; i <= totalSteps; i++) {
-        const nextBtn = document.getElementById(`nextBtn${i}`);
-        if (nextBtn) {
-          nextBtn.addEventListener('click', function () {
+      // Navegación con botones
+      document.querySelectorAll('.next-btn').forEach((btn, index) => {
+        btn.addEventListener('click', function () {
+          if (validateStep(currentStep)) {
+            currentStep++;
+            showStep(currentStep);
+          }
+        });
+      });
+
+      document.querySelectorAll('.prev-btn').forEach((btn, index) => {
+        btn.addEventListener('click', function () {
+          currentStep--;
+          showStep(currentStep);
+        });
+      });
+
+      // Navegación con Enter
+      phoneForm.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          
+          // Si estamos en el último paso, enviar formulario
+          if (currentStep === totalSteps - 1) {
+            if (validateStep(currentStep)) {
+              phoneForm.dispatchEvent(new Event('submit'));
+            }
+          } else {
+            // Avanzar al siguiente paso
             if (validateStep(currentStep)) {
               currentStep++;
               showStep(currentStep);
             }
-          });
+          }
         }
-      }
-
-      // Botones "Anterior"
-      for (let i = 2; i <= totalSteps; i++) {
-        const prevBtn = document.getElementById(`prevBtn${i}`);
-        if (prevBtn) {
-          prevBtn.addEventListener('click', function () {
-            currentStep--;
-            showStep(currentStep);
-          });
-        }
-      }
+      });
 
       // Envío del formulario
       phoneForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
         if (validateStep(currentStep)) {
-          // Mostrar estado de procesamiento
           const submitBtn = document.getElementById('submitBtn');
           const originalText = submitBtn.innerHTML;
           submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
           submitBtn.disabled = true;
 
-          // Obtener datos del formulario
           const formData = new FormData(phoneForm);
           const data = {};
           
-          // Convertir FormData a objeto
           for (let [key, value] of formData.entries()) {
             data[key] = value;
           }
           
-          // Asegurar que fast_charging_available tenga un valor
           if (!data.fast_charging_available) {
             data.fast_charging_available = '0';
           }
 
-          console.log('Datos a enviar:', data);
+          console.log('📤 Enviando datos:', data);
 
-          // Enviar datos a Flask
           fetch('/api/resultado', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
           })
             .then(response => {
-              console.log('Status:', response.status);
-              if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
-              }
+              if (!response.ok) throw new Error('Error en la respuesta del servidor');
               return response.json();
             })
             .then(resultado => {
-              console.log('Resultado recibido:', resultado);
-              // Mostrar resultados
+              console.log('✅ Resultado recibido:', resultado);
               mostrarResultado(resultado);
             })
             .catch(error => {
-              console.error('Error:', error);
+              console.error('❌ Error:', error);
               alert('Hubo un error al procesar tu solicitud. Por favor, intenta nuevamente.');
             })
             .finally(() => {
-              // Restaurar botón
               submitBtn.innerHTML = originalText;
               submitBtn.disabled = false;
             });
         }
       });
 
-      // Botón de reinicio
-      restartBtn.addEventListener('click', function () {
-        // Animación de salida de resultados
+      // Botón de reinicio con Enter
+      restartBtn.addEventListener('click', reiniciarFormulario);
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !resultScreen.classList.contains('hidden')) {
+          reiniciarFormulario();
+        }
+      });
+
+      function reiniciarFormulario() {
         anime({
           targets: resultScreen,
           opacity: 0,
@@ -1041,14 +1026,10 @@
           complete: function () {
             resultScreen.classList.add('hidden');
             formScreen.classList.remove('hidden');
-
-            // Reiniciar formulario
             phoneForm.reset();
             currentStep = 0;
             showStep(currentStep);
             updateProgress();
-
-            // Animación de entrada del formulario
             anime({
               targets: formScreen,
               opacity: [0, 1],
@@ -1058,45 +1039,41 @@
             });
           }
         });
-      });
+      }
 
       // Función para mostrar resultados
       function mostrarResultado(resultado) {
-        // Actualizar elementos de resultado
         document.getElementById('resultGama').textContent = resultado.gama;
         
-        // Extraer el tipo de gama (Baja, Media, Alta)
         const tipoGama = resultado.gama.replace('Gama ', '');
         document.getElementById('explanationGama').textContent = tipoGama;
 
-        // Formatear factores clave
         const factoresTexto = resultado.factores_clave.map(factor =>
           factor.charAt(0).toUpperCase() + factor.slice(1)
         ).join(', ');
         document.getElementById('keyFactors').textContent = factoresTexto;
 
-        // Llenar lista de características
+        document.getElementById('totalDispositivos').textContent = resultado.total_dispositivos || '980';
+
         const featuresList = document.getElementById('featuresList');
         featuresList.innerHTML = '';
 
         for (const [key, value] of Object.entries(resultado.promedio)) {
           const li = document.createElement('li');
           li.innerHTML = `
-          <span class="feature-name">${key}</span>
-          <span class="feature-value">${value}</span>
-        `;
+            <span class="feature-name">${key}</span>
+            <span class="feature-value">${value}</span>
+          `;
           featuresList.appendChild(li);
         }
 
-        // Actualizar gráfico si está disponible
         const chartContent = document.getElementById('chartContent');
         if (resultado.grafico) {
           chartContent.innerHTML = `<img src="${resultado.grafico}" alt="Gráfico de análisis">`;
         } else {
-          chartContent.innerHTML = '<i class="fas fa-chart-pie"></i> Gráfico no disponible';
+          chartContent.innerHTML = '<p style="color: var(--secondary);">Gráfico no disponible</p>';
         }
 
-        // Animación de transición a resultados
         anime({
           targets: formScreen,
           opacity: 0,
@@ -1106,8 +1083,6 @@
           complete: function () {
             formScreen.classList.add('hidden');
             resultScreen.classList.remove('hidden');
-
-            // Animación de entrada de resultados
             anime({
               targets: resultScreen,
               opacity: [0, 1],
