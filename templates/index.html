@@ -6,534 +6,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clasificador de Celulares</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
-  <style>
-    :root {
-      --primary: #0078d4;
-      --primary-dark: #0063b1;
-      --secondary: #6c757d;
-      --light: #f8f9fa;
-      --dark: #343a40;
-      --success: #28a745;
-      --border-radius: 12px;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      --transition: all 0.3s ease;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      color: var(--dark);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    /* Fondo animado con smartphones */
-    .phone-background {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
-    .floating-phone {
-      position: absolute;
-      font-size: 3rem;
-      opacity: 0.1;
-      animation: float 20s infinite ease-in-out;
-    }
-
-    .floating-phone:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; animation-duration: 15s; }
-    .floating-phone:nth-child(2) { left: 80%; top: 40%; animation-delay: 2s; animation-duration: 18s; }
-    .floating-phone:nth-child(3) { left: 20%; top: 70%; animation-delay: 4s; animation-duration: 22s; }
-    .floating-phone:nth-child(4) { left: 70%; top: 10%; animation-delay: 6s; animation-duration: 20s; }
-    .floating-phone:nth-child(5) { left: 40%; top: 80%; animation-delay: 8s; animation-duration: 17s; }
-    .floating-phone:nth-child(6) { left: 90%; top: 70%; animation-delay: 3s; animation-duration: 19s; }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      25% { transform: translateY(-30px) rotate(5deg); }
-      50% { transform: translateY(-60px) rotate(-5deg); }
-      75% { transform: translateY(-30px) rotate(3deg); }
-    }
-
-    .container {
-      width: 100%;
-      max-width: 800px;
-      background: white;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      position: relative;
-      z-index: 1;
-    }
-
-    .intro {
-      padding: 60px 40px;
-      text-align: center;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .intro::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzMCkiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjAuNSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI3BhdHRlcm4pIi8+PC9zdmc+');
-    }
-
-    .intro h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .intro p {
-      font-size: 1.2rem;
-      margin-bottom: 40px;
-      opacity: 0.9;
-      position: relative;
-      z-index: 1;
-    }
-
-    .btn {
-      background: white;
-      color: var(--primary);
-      border: none;
-      padding: 16px 40px;
-      border-radius: 50px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      position: relative;
-      z-index: 1;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .btn:active {
-      transform: translateY(-1px);
-    }
-
-    .form-container {
-      padding: 40px;
-      position: relative;
-    }
-
-    .form-step {
-      display: none;
-      animation: fadeIn 0.5s ease forwards;
-    }
-
-    .form-step.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .step-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .step-icon {
-      width: 50px;
-      height: 50px;
-      background: var(--primary);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      margin-right: 15px;
-      flex-shrink: 0;
-    }
-
-    .step-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-
-    .step-description {
-      color: var(--secondary);
-      margin-top: 5px;
-    }
-
-    .form-group {
-      margin-bottom: 25px;
-    }
-
-    .form-label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: 500;
-      color: var(--dark);
-    }
-
-    .input-group {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .input-field {
-      flex: 1;
-      min-width: 200px;
-      position: relative;
-    }
-
-    .input-field input {
-      width: 100%;
-      padding: 15px 45px 15px 20px;
-      border: 2px solid #e9ecef;
-      border-radius: var(--border-radius);
-      font-size: 1rem;
-      transition: var(--transition);
-      background: white;
-    }
-
-    .input-field input:focus {
-      border-color: var(--primary);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
-    }
-
-    .input-field input.error {
-      border-color: #dc3545;
-      animation: shake 0.3s;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
-    }
-
-    .input-icon {
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--secondary);
-      transition: var(--transition);
-      pointer-events: none;
-    }
-
-    .input-field input:focus ~ .input-icon {
-      color: var(--primary);
-    }
-
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-      padding: 15px;
-      background: var(--light);
-      border-radius: var(--border-radius);
-    }
-
-    .checkbox-group input {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    .checkbox-group label {
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .form-navigation {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 40px;
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: var(--secondary);
-      border: 2px solid var(--secondary);
-      padding: 12px 25px;
-    }
-
-    .btn-secondary:hover {
-      background: var(--secondary);
-      color: white;
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .progress-container {
-      margin-bottom: 30px;
-    }
-
-    .progress-bar-container {
-      height: 6px;
-      background: #e9ecef;
-      border-radius: 3px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: var(--primary);
-      width: 0%;
-      transition: width 0.5s ease;
-    }
-
-    .progress-steps {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-      font-size: 0.85rem;
-      color: var(--secondary);
-      position: relative;
-    }
-
-    .step-indicator {
-      display: flex;
-      align-items: center;
-      flex-direction: column;
-      position: relative;
-      flex: 1;
-    }
-
-    .step-indicator.active {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .step-indicator.completed .step-dot {
-      background: var(--success);
-      border-color: var(--success);
-    }
-
-    .step-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: white;
-      border: 3px solid #e9ecef;
-      margin-bottom: 8px;
-      transition: var(--transition);
-      position: relative;
-      z-index: 2;
-    }
-
-    .step-indicator.active .step-dot {
-      background: var(--primary);
-      border-color: var(--primary);
-      width: 18px;
-      height: 18px;
-    }
-
-    .result-container {
-      padding: 40px;
-      text-align: center;
-    }
-
-    .result-icon {
-      width: 80px;
-      height: 80px;
-      background: var(--primary);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      margin: 0 auto 20px;
-    }
-
-    .result-title {
-      font-size: 2rem;
-      margin-bottom: 10px;
-    }
-
-    .result-subtitle {
-      font-size: 1.2rem;
-      color: var(--secondary);
-      margin-bottom: 30px;
-    }
-
-    .result-card {
-      background: var(--light);
-      border-radius: var(--border-radius);
-      padding: 25px;
-      margin-bottom: 30px;
-      text-align: left;
-    }
-
-    .result-card h3 {
-      margin-bottom: 15px;
-      color: var(--primary);
-    }
-
-    .features-list {
-      list-style: none;
-    }
-
-    .features-list li {
-      padding: 10px 0;
-      border-bottom: 1px solid #e9ecef;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .features-list li:last-child {
-      border-bottom: none;
-    }
-
-    .feature-name {
-      font-weight: 500;
-    }
-
-    .feature-value {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .chart-container {
-      margin: 30px 0;
-      background: white;
-      border-radius: var(--border-radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-    }
-
-    .chart-container h3 {
-      margin-bottom: 20px;
-      color: var(--primary);
-    }
-
-    .chart-container img {
-      width: 100%;
-      height: auto;
-      border-radius: var(--border-radius);
-    }
-
-    .explanation {
-      text-align: left;
-      margin-top: 30px;
-      line-height: 1.6;
-    }
-
-    .explanation h3 {
-      margin-bottom: 15px;
-      color: var(--primary);
-    }
-
-    .explanation p {
-      margin-bottom: 15px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        max-width: 100%;
-      }
-
-      .intro {
-        padding: 40px 20px;
-      }
-
-      .intro h1 {
-        font-size: 2rem;
-      }
-
-      .form-container,
-      .result-container {
-        padding: 20px;
-      }
-
-      .input-group {
-        flex-direction: column;
-      }
-
-      .input-field {
-        min-width: 100%;
-      }
-
-      .floating-phone {
-        font-size: 2rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
 <body>
-  <!-- Fondo animado -->
   <div class="phone-background">
     <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
     <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
     <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
-    <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
     <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
     <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
+    <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
   </div>
 
   <div class="container">
     <!-- Pantalla de inicio -->
     <div class="intro" id="introScreen">
-      <h1>¿Qué gama de celular necesitas?</h1>
-      <p>Descubre el celular perfecto para ti en solo unos pasos</p>
-      <button class="btn" id="startBtn">
+      <h1 class="fade-in-up">¿Qué gama de celular necesitas?</h1>
+      <p class="fade-in-up delay-1">Descubre el celular perfecto para ti</p>
+      <button class="btn fade-in-up delay-2" id="startBtn">
         <i class="fas fa-play"></i> Comenzar
       </button>
     </div>
 
-    <!-- Formulario de preguntas -->
+    <!-- Formulario -->
     <div class="form-container hidden" id="formScreen">
       <div class="progress-container">
-        <div class="progress-bar-container">
+        <div class="progress-bar-bg">
           <div class="progress-bar" id="progressBar"></div>
         </div>
         <div class="progress-steps" id="progressSteps"></div>
@@ -545,38 +44,21 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-microchip"></i></div>
             <div>
-              <h2 class="step-title">Procesador</h2>
-              <p class="step-description">Características del procesador de tu celular</p>
+              <h2>Procesador</h2>
+              <p>Características del procesador</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="num_cores">Núcleos del procesador</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="num_cores" name="num_cores" min="1" max="16" required>
-                <div class="input-icon"><i class="fas fa-server"></i></div>
-              </div>
-            </div>
+            <label for="num_cores">Núcleos del procesador</label>
+            <input type="number" id="num_cores" name="num_cores" min="1" max="16" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="processor_speed">Velocidad del procesador (GHz)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="1.0" max="4.0" required>
-                <div class="input-icon"><i class="fas fa-tachometer-alt"></i></div>
-              </div>
-            </div>
+            <label for="processor_speed">Velocidad (GHz)</label>
+            <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="1.0" max="4.0" required>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" disabled>
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
-            <button type="button" class="btn next-btn">
-              Siguiente <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-secondary" disabled>Anterior</button>
+            <button type="button" class="btn next-btn">Siguiente</button>
           </div>
         </div>
 
@@ -585,33 +67,21 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-battery-full"></i></div>
             <div>
-              <h2 class="step-title">Batería</h2>
-              <p class="step-description">Características de la batería</p>
+              <h2>Batería</h2>
+              <p>Capacidad y carga rápida</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="battery_capacity">Capacidad de la batería (mAh)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required>
-                <div class="input-icon"><i class="fas fa-bolt"></i></div>
-              </div>
-            </div>
+            <label for="battery_capacity">Capacidad (mAh)</label>
+            <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required>
           </div>
-
           <div class="checkbox-group">
             <input type="checkbox" id="fast_charging_available" name="fast_charging_available" value="1">
-            <label for="fast_charging_available">Incluye carga rápida</label>
+            <label for="fast_charging_available">Carga rápida disponible</label>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary prev-btn">
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
-            <button type="button" class="btn next-btn">
-              Siguiente <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
+            <button type="button" class="btn next-btn">Siguiente</button>
           </div>
         </div>
 
@@ -620,38 +90,21 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-memory"></i></div>
             <div>
-              <h2 class="step-title">Memoria</h2>
-              <p class="step-description">Capacidad de memoria y almacenamiento</p>
+              <h2>Memoria</h2>
+              <p>RAM y almacenamiento</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="ram_capacity">Memoria RAM (GB)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="16" required>
-                <div class="input-icon"><i class="fas fa-memory"></i></div>
-              </div>
-            </div>
+            <label for="ram_capacity">RAM (GB)</label>
+            <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="16" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="internal_memory">Almacenamiento interno (GB)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required>
-                <div class="input-icon"><i class="fas fa-hdd"></i></div>
-              </div>
-            </div>
+            <label for="internal_memory">Almacenamiento (GB)</label>
+            <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary prev-btn">
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
-            <button type="button" class="btn next-btn">
-              Siguiente <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
+            <button type="button" class="btn next-btn">Siguiente</button>
           </div>
         </div>
 
@@ -660,48 +113,25 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-mobile-alt"></i></div>
             <div>
-              <h2 class="step-title">Pantalla</h2>
-              <p class="step-description">Características de la pantalla</p>
+              <h2>Pantalla</h2>
+              <p>Tamaño y resolución</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="screen_size">Tamaño de la pantalla (pulgadas)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required>
-                <div class="input-icon"><i class="fas fa-mobile-alt"></i></div>
-              </div>
-            </div>
+            <label for="screen_size">Tamaño (pulgadas)</label>
+            <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="resolution_width">Resolución horizontal (px)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required>
-                <div class="input-icon"><i class="fas fa-arrows-alt-h"></i></div>
-              </div>
-            </div>
+            <label for="resolution_width">Resolución horizontal (px)</label>
+            <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="resolution_height">Resolución vertical (px)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2160" required>
-                <div class="input-icon"><i class="fas fa-arrows-alt-v"></i></div>
-              </div>
-            </div>
+            <label for="resolution_height">Resolución vertical (px)</label>
+            <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2160" required>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary prev-btn">
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
-            <button type="button" class="btn next-btn">
-              Siguiente <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
+            <button type="button" class="btn next-btn">Siguiente</button>
           </div>
         </div>
 
@@ -710,48 +140,25 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-camera"></i></div>
             <div>
-              <h2 class="step-title">Cámara</h2>
-              <p class="step-description">Características de las cámaras</p>
+              <h2>Cámara</h2>
+              <p>Especificaciones de cámara</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="num_rear_cameras">Número de cámaras traseras</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required>
-                <div class="input-icon"><i class="fas fa-camera"></i></div>
-              </div>
-            </div>
+            <label for="num_rear_cameras">Cámaras traseras</label>
+            <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="primary_camera_rear">Megapíxeles cámara trasera principal</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required>
-                <div class="input-icon"><i class="fas fa-camera-retro"></i></div>
-              </div>
-            </div>
+            <label for="primary_camera_rear">Cámara principal (MP)</label>
+            <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="primary_camera_front">Megapíxeles cámara frontal</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required>
-                <div class="input-icon"><i class="fas fa-user-circle"></i></div>
-              </div>
-            </div>
+            <label for="primary_camera_front">Cámara frontal (MP)</label>
+            <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary prev-btn">
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
-            <button type="button" class="btn next-btn">
-              Siguiente <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
+            <button type="button" class="btn next-btn">Siguiente</button>
           </div>
         </div>
 
@@ -760,25 +167,16 @@
           <div class="step-header">
             <div class="step-icon"><i class="fas fa-dollar-sign"></i></div>
             <div>
-              <h2 class="step-title">Precio</h2>
-              <p class="step-description">Precio estimado del dispositivo</p>
+              <h2>Precio</h2>
+              <p>Precio estimado del dispositivo</p>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="price">Precio estimado (USD)</label>
-            <div class="input-group">
-              <div class="input-field">
-                <input type="number" id="price" name="price" min="50" required>
-                <div class="input-icon"><i class="fas fa-tag"></i></div>
-              </div>
-            </div>
+            <label for="price">Precio (USD)</label>
+            <input type="number" id="price" name="price" min="50" required>
           </div>
-
           <div class="form-navigation">
-            <button type="button" class="btn btn-secondary prev-btn">
-              <i class="fas fa-arrow-left"></i> Anterior
-            </button>
+            <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
             <button type="submit" class="btn" id="submitBtn">
               <i class="fas fa-chart-bar"></i> Ver resultado
             </button>
@@ -787,13 +185,11 @@
       </form>
     </div>
 
-    <!-- Pantalla de resultados -->
+    <!-- Resultados -->
     <div class="result-container hidden" id="resultScreen">
-      <div class="result-icon">
-        <i class="fas fa-mobile-alt"></i>
-      </div>
+      <div class="result-icon"><i class="fas fa-mobile-alt"></i></div>
       <h1 class="result-title" id="resultGama">Gama Media</h1>
-      <p class="result-subtitle">Basado en las características que proporcionaste</p>
+      <p class="result-subtitle">Basado en tus características</p>
 
       <div class="result-card">
         <h3>Características promedio de esta gama</h3>
@@ -801,300 +197,37 @@
       </div>
 
       <div class="chart-container">
-        <h3>Análisis de tu dispositivo</h3>
-        <div id="chartContent"></div>
+        <h3>Comparación con tu gama (Diferencias relativas)</h3>
+        <canvas id="chartDifRel"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <h3>Dispersión </h3>
+        <canvas id="chartScatter"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <h3>Distribución de gamas</h3>
+        <canvas id="chartDistribution"></canvas>
       </div>
 
       <div class="explanation">
         <h3>¿Por qué esta gama?</h3>
-        <p>Basándonos en el análisis de tus especificaciones utilizando un algoritmo de aprendizaje automático que compara tu dispositivo con una base de datos de <strong id="totalDispositivos">0</strong> celulares, hemos determinado que se clasifica en la <strong id="explanationGama">Media</strong>.</p>
-        <p>Los factores más determinantes para esta clasificación fueron: <strong id="keyFactors">el precio, la capacidad de la cámara y la memoria RAM</strong>.</p>
+        <p>Basándonos en el análisis de <strong id="totalDispositivos">0</strong> dispositivos, tu celular se clasifica
+          en la <strong id="explanationGama">Media</strong>.</p>
+        <p>Los factores más determinantes fueron: <strong id="keyFactors">-</strong>.</p>
       </div>
 
-      <div class="form-navigation" style="justify-content: center; margin-top: 40px;">
-        <button type="button" class="btn" id="restartBtn">
-          <i class="fas fa-redo"></i> Realizar otra evaluación
-        </button>
-      </div>
+      <button type="button" class="btn" id="restartBtn">
+        <i class="fas fa-redo"></i> Nueva evaluación
+      </button>
     </div>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const introScreen = document.getElementById('introScreen');
-      const formScreen = document.getElementById('formScreen');
-      const resultScreen = document.getElementById('resultScreen');
-      const startBtn = document.getElementById('startBtn');
-      const phoneForm = document.getElementById('phoneForm');
-      const progressBar = document.getElementById('progressBar');
-      const progressSteps = document.getElementById('progressSteps');
-      const restartBtn = document.getElementById('restartBtn');
-
-      const steps = document.querySelectorAll('.form-step');
-      const totalSteps = steps.length;
-      let currentStep = 0;
-
-      // Inicializar indicadores de progreso
-      function initProgressSteps() {
-        progressSteps.innerHTML = '';
-        for (let i = 0; i < totalSteps; i++) {
-          const stepIndicator = document.createElement('div');
-          stepIndicator.className = 'step-indicator';
-          if (i === 0) stepIndicator.classList.add('active');
-          stepIndicator.innerHTML = `
-            <div class="step-dot"></div>
-            <span>Paso ${i + 1}</span>
-          `;
-          progressSteps.appendChild(stepIndicator);
-        }
-      }
-
-      // Actualizar barra de progreso
-      function updateProgress() {
-        const progress = ((currentStep + 1) / totalSteps) * 100;
-        progressBar.style.width = `${progress}%`;
-
-        const indicators = document.querySelectorAll('.step-indicator');
-        indicators.forEach((indicator, index) => {
-          indicator.classList.remove('active', 'completed');
-          if (index === currentStep) {
-            indicator.classList.add('active');
-          } else if (index < currentStep) {
-            indicator.classList.add('completed');
-          }
-        });
-      }
-
-      // Navegación entre pasos
-      function showStep(stepIndex) {
-        steps.forEach(step => step.classList.remove('active'));
-        steps[stepIndex].classList.add('active');
-        updateProgress();
-
-        anime({
-          targets: steps[stepIndex],
-          opacity: [0, 1],
-          translateY: [20, 0],
-          duration: 500,
-          easing: 'easeOutQuad'
-        });
-      }
-
-      // Validar paso actual
-      function validateStep(stepIndex) {
-        const currentStepElement = steps[stepIndex];
-        const inputs = currentStepElement.querySelectorAll('input[required]');
-        let isValid = true;
-
-        for (let input of inputs) {
-          if (!input.value || input.value.trim() === '') {
-            input.classList.add('error');
-            isValid = false;
-            if (isValid === false) input.focus();
-            setTimeout(() => input.classList.remove('error'), 300);
-          }
-        }
-        return isValid;
-      }
-
-      // Inicializar
-      initProgressSteps();
-      updateProgress();
-
-      // Botón comenzar
-      startBtn.addEventListener('click', function () {
-        anime({
-          targets: introScreen,
-          opacity: 0,
-          translateY: -50,
-          duration: 500,
-          easing: 'easeInOutQuad',
-          complete: function () {
-            introScreen.classList.add('hidden');
-            formScreen.classList.remove('hidden');
-            anime({
-              targets: formScreen,
-              opacity: [0, 1],
-              translateY: [50, 0],
-              duration: 500,
-              easing: 'easeOutQuad'
-            });
-          }
-        });
-      });
-
-      // Navegación con botones
-      document.querySelectorAll('.next-btn').forEach((btn, index) => {
-        btn.addEventListener('click', function () {
-          if (validateStep(currentStep)) {
-            currentStep++;
-            showStep(currentStep);
-          }
-        });
-      });
-
-      document.querySelectorAll('.prev-btn').forEach((btn, index) => {
-        btn.addEventListener('click', function () {
-          currentStep--;
-          showStep(currentStep);
-        });
-      });
-
-      // Navegación con Enter
-      phoneForm.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          
-          // Si estamos en el último paso, enviar formulario
-          if (currentStep === totalSteps - 1) {
-            if (validateStep(currentStep)) {
-              phoneForm.dispatchEvent(new Event('submit'));
-            }
-          } else {
-            // Avanzar al siguiente paso
-            if (validateStep(currentStep)) {
-              currentStep++;
-              showStep(currentStep);
-            }
-          }
-        }
-      });
-
-      // Envío del formulario
-      phoneForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        if (validateStep(currentStep)) {
-          const submitBtn = document.getElementById('submitBtn');
-          const originalText = submitBtn.innerHTML;
-          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-          submitBtn.disabled = true;
-
-          const formData = new FormData(phoneForm);
-          const data = {};
-          
-          for (let [key, value] of formData.entries()) {
-            data[key] = value;
-          }
-          
-          if (!data.fast_charging_available) {
-            data.fast_charging_available = '0';
-          }
-
-          console.log('📤 Enviando datos:', data);
-
-          fetch('/api/resultado', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          })
-            .then(response => {
-              if (!response.ok) throw new Error('Error en la respuesta del servidor');
-              return response.json();
-            })
-            .then(resultado => {
-              console.log('✅ Resultado recibido:', resultado);
-              mostrarResultado(resultado);
-            })
-            .catch(error => {
-              console.error('❌ Error:', error);
-              alert('Hubo un error al procesar tu solicitud. Por favor, intenta nuevamente.');
-            })
-            .finally(() => {
-              submitBtn.innerHTML = originalText;
-              submitBtn.disabled = false;
-            });
-        }
-      });
-
-      // Botón de reinicio con Enter
-      restartBtn.addEventListener('click', reiniciarFormulario);
-      
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !resultScreen.classList.contains('hidden')) {
-          reiniciarFormulario();
-        }
-      });
-
-      function reiniciarFormulario() {
-        anime({
-          targets: resultScreen,
-          opacity: 0,
-          translateY: 50,
-          duration: 500,
-          easing: 'easeInOutQuad',
-          complete: function () {
-            resultScreen.classList.add('hidden');
-            formScreen.classList.remove('hidden');
-            phoneForm.reset();
-            currentStep = 0;
-            showStep(currentStep);
-            updateProgress();
-            anime({
-              targets: formScreen,
-              opacity: [0, 1],
-              translateY: [50, 0],
-              duration: 500,
-              easing: 'easeOutQuad'
-            });
-          }
-        });
-      }
-
-      // Función para mostrar resultados
-      function mostrarResultado(resultado) {
-        document.getElementById('resultGama').textContent = resultado.gama;
-        
-        const tipoGama = resultado.gama.replace('Gama ', '');
-        document.getElementById('explanationGama').textContent = tipoGama;
-
-        const factoresTexto = resultado.factores_clave.map(factor =>
-          factor.charAt(0).toUpperCase() + factor.slice(1)
-        ).join(', ');
-        document.getElementById('keyFactors').textContent = factoresTexto;
-
-        document.getElementById('totalDispositivos').textContent = resultado.total_dispositivos || '980';
-
-        const featuresList = document.getElementById('featuresList');
-        featuresList.innerHTML = '';
-
-        for (const [key, value] of Object.entries(resultado.promedio)) {
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <span class="feature-name">${key}</span>
-            <span class="feature-value">${value}</span>
-          `;
-          featuresList.appendChild(li);
-        }
-
-        const chartContent = document.getElementById('chartContent');
-        if (resultado.grafico) {
-          chartContent.innerHTML = `<img src="${resultado.grafico}" alt="Gráfico de análisis">`;
-        } else {
-          chartContent.innerHTML = '<p style="color: var(--secondary);">Gráfico no disponible</p>';
-        }
-
-        anime({
-          targets: formScreen,
-          opacity: 0,
-          translateY: -50,
-          duration: 500,
-          easing: 'easeInOutQuad',
-          complete: function () {
-            formScreen.classList.add('hidden');
-            resultScreen.classList.remove('hidden');
-            anime({
-              targets: resultScreen,
-              opacity: [0, 1],
-              translateY: [50, 0],
-              duration: 500,
-              easing: 'easeOutQuad'
-            });
-          }
-        });
-      }
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
 
 </html>

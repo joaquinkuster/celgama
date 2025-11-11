@@ -2,174 +2,142 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import joblib
-from sklearn.decomposition import PCA
 import os
+import sys
 
 print("="*50)
-print("Entrenando modelo de clasificación de celulares")
+print("Entrenando modelo de clasificación")
 print("="*50)
 
-# Verificar que existe el archivo de datos
-if not os.path.exists('data/celulares.csv'):
-    print("\n❌ ERROR: No se encontró el archivo 'data/celulares.csv'")
-    print("   Por favor, asegúrate de que el archivo existe en la carpeta 'data/'")
-    exit(1)
+INR_TO_USD = 90
+K_CLUSTERS = 3
+RANDOM_STATE = 42
 
-# Cargar dataset
+FEATURES = [
+    'num_cores', 'processor_speed', 'battery_capacity', 'fast_charging_available',
+    'ram_capacity', 'internal_memory', 'screen_size', 'resolution_width',
+    'resolution_height', 'num_rear_cameras', 'primary_camera_rear',
+    'primary_camera_front', 'price'
+]
+
+# 1. Cargar dataset
+FILE_PATH = 'data/celulares.csv'
+if not os.path.exists(FILE_PATH):
+    print(f"❌ ERROR: No se encontró '{FILE_PATH}'")
+    sys.exit(1)
+
 print("\n1. Cargando dataset...")
-df = pd.read_csv('data/celulares.csv')
-print(f"   ✓ Dataset cargado: {len(df)} registros")
+df = pd.read_csv(FILE_PATH)
+print(f"   ✓ {len(df)} registros cargados")
 
-# Convertir precios de INR a USD (1 USD = ~83 INR aproximadamente)
-INR_TO_USD = 83.0
-print(f"\n2. Convirtiendo precios de INR a USD (1 USD = {INR_TO_USD} INR)...")
-if 'price' in df.columns:
-    df['price'] = df['price'] / INR_TO_USD
-    print(f"   ✓ Precios convertidos")
-    print(f"   - Rango de precios: ${df['price'].min():.2f} - ${df['price'].max():.2f} USD")
+# Verificar columnas
+if not all(col in df.columns for col in FEATURES):
+    missing = [col for col in FEATURES if col not in df.columns]
+    print(f"❌ ERROR: Faltan columnas: {', '.join(missing)}")
+    sys.exit(1)
 
-# Selección de características
-print("\n3. Seleccionando características...")
-features = df[[
-    'num_cores', 'processor_speed',
-    'battery_capacity', 'fast_charging_available',
-    'ram_capacity', 'internal_memory',
-    'screen_size', 'resolution_width', 'resolution_height',
-    'num_rear_cameras', 'primary_camera_rear', 'primary_camera_front',
-    'price'
-]].copy()
+# 2. Conversión de precios
+print(f"\n2. Convirtiendo precios (1 USD = {INR_TO_USD} INR)...")
+df['price'] = df['price'] / INR_TO_USD
+print(f"   ✓ Rango: ${df['price'].min():.2f} - ${df['price'].max():.2f}")
 
-# Convertir 'fast_charging_available' a entero
+# 3. Limpiar datos
+print("\n3. Limpiando datos...")
+features = df[FEATURES].copy()
 features['fast_charging_available'] = features['fast_charging_available'].astype(int)
+features = features.dropna()
+print(f"   ✓ {len(features)} registros limpios")
 
-# Verificar valores faltantes
-print("\n4. Verificando valores faltantes...")
-missing_values = features.isnull().sum()
-if missing_values.sum() > 0:
-    print("   Valores faltantes por columna:")
-    print(missing_values[missing_values > 0])
-    print(f"\n   ⚠️  Eliminando {features.isnull().any(axis=1).sum()} filas con valores faltantes...")
-    features = features.dropna()
-else:
-    print("   ✓ No hay valores faltantes")
-
-print(f"   ✓ Dataset limpio: {len(features)} registros")
-
-# Escalado
-print("\n5. Escalando datos...")
+# 4. Escalar
+print("\n4. Escalando datos...")
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(features)
 print("   ✓ Datos escalados")
 
-# Reducir a 2 dimensiones para graficar
-print("\n6. Aplicando PCA...")
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X_scaled)
-variance_explained = pca.explained_variance_ratio_
-print(f"   ✓ PCA aplicado")
-print(f"   - Varianza explicada: {variance_explained[0]:.2%} y {variance_explained[1]:.2%}")
-
-# Clustering
-print("\n7. Entrenando modelo K-Means...")
-kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+# 5. K-Means
+print(f"\n5. Entrenando K-Means ({K_CLUSTERS} clusters)...")
+kmeans = KMeans(n_clusters=K_CLUSTERS, random_state=RANDOM_STATE, n_init='auto')
 kmeans.fit(X_scaled)
 labels = kmeans.predict(X_scaled)
-print(f"   ✓ Modelo K-Means entrenado con {kmeans.n_clusters} clusters")
+print("   ✓ Modelo entrenado")
 
-# Mapeo de clusters a gama basado en precio promedio
-print("\n8. Mapeando clusters a gamas...")
-features_copy = features.copy()
-features_copy['cluster'] = labels
+# 6. Mapeo inteligente (múltiples características)
+print("\n6. Mapeando clusters a gamas (análisis multi-característica)...")
+features['cluster'] = labels
 
-# Calcular precio promedio por cluster
-precio_promedio = features_copy.groupby('cluster')['price'].mean().sort_values()
+# Calcular puntajes compuestos por cluster
+puntajes_cluster = []
+for cluster_id in range(K_CLUSTERS):
+    cluster_data = features[features['cluster'] == cluster_id]
+    
+    # Puntaje basado en múltiples factores con pesos
+    puntaje = (
+        cluster_data['price'].mean() * 0.25 +
+        cluster_data['ram_capacity'].mean() * 0.20 +
+        cluster_data['primary_camera_rear'].mean() * 0.15 +
+        cluster_data['processor_speed'].mean() * 0.15 +
+        cluster_data['battery_capacity'].mean() / 100 * 0.15 +
+        cluster_data['internal_memory'].mean() * 0.10
+    )
+    puntajes_cluster.append((cluster_id, puntaje))
+
+# Ordenar por puntaje y asignar gamas
+puntajes_cluster.sort(key=lambda x: x[1])
 mapeo = {}
-for idx, cluster in enumerate(precio_promedio.index):
-    if idx == 0:
-        mapeo[cluster] = 'Gama Baja'
-    elif idx == 1:
-        mapeo[cluster] = 'Gama Media'
-    else:
-        mapeo[cluster] = 'Gama Alta'
+gamas = ['Gama Baja', 'Gama Media', 'Gama Alta']
+
+for idx, (cluster_id, _) in enumerate(puntajes_cluster):
+    mapeo[cluster_id] = gamas[idx]
 
 print("   Mapeo de clusters:")
-for cluster, gama in sorted(mapeo.items()):
-    count = (labels == cluster).sum()
-    avg_price = features_copy[features_copy['cluster'] == cluster]['price'].mean()
-    print(f"   - Cluster {cluster} → {gama} ({count} dispositivos, ${avg_price:.2f} promedio)")
+for cluster_id, gama in sorted(mapeo.items()):
+    count = (labels == cluster_id).sum()
+    avg_price = features[features['cluster'] == cluster_id]['price'].mean()
+    avg_ram = features[features['cluster'] == cluster_id]['ram_capacity'].mean()
+    print(f"   - Cluster {cluster_id} → {gama} ({count} dispositivos, ${avg_price:.0f}, {avg_ram:.0f}GB RAM)")
 
-# Calcular promedios por cluster
-print("\n9. Calculando promedios por cluster...")
-features_copy['gama'] = features_copy['cluster'].map(mapeo)
-promedios = features_copy.groupby('cluster').mean()
-promedios['gama'] = promedios.index.map(mapeo)
-promedios = promedios.reset_index()
+# Calcular estadísticas
+features['gama'] = features['cluster'].map(mapeo)
+promedios = features.groupby('cluster').mean(numeric_only=True).reset_index()
+distribucion = features.groupby('gama').size().to_dict()
 
-# Contar dispositivos por gama
-distribucion = features_copy.groupby('gama').size().to_dict()
+# 7. Guardar modelos (solo lo esencial)
+print("\n7. Guardando modelos...")
+archivos = {
+    'scaler.pkl': scaler,
+    'modelo_kmeans.pkl': kmeans,
+    'mapeo_gama.pkl': mapeo,
+    'distribucion_gamas.pkl': distribucion
+}
 
-# Guardar modelos y datos
-print("\n10. Guardando modelos...")
-try:
-    joblib.dump(scaler, 'scaler.pkl')
-    print("   ✓ scaler.pkl guardado")
-    
-    joblib.dump(kmeans, 'modelo_kmeans.pkl')
-    print("   ✓ modelo_kmeans.pkl guardado")
-    
-    joblib.dump(mapeo, 'mapeo_gama.pkl')
-    print("   ✓ mapeo_gama.pkl guardado")
-    
-    joblib.dump(pca, 'pca.pkl')
-    print("   ✓ pca.pkl guardado")
-    
-    promedios.to_csv('clusters_promedios.csv', index=False)
-    print("   ✓ clusters_promedios.csv guardado")
-    
-    # Guardar coordenadas PCA
-    pca_df = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
-    pca_df['cluster'] = labels
-    pca_df['gama'] = pca_df['cluster'].map(mapeo)
-    pca_df.to_csv('pca_coords.csv', index=False)
-    print("   ✓ pca_coords.csv guardado")
-    
-    # Guardar distribución
-    joblib.dump(distribucion, 'distribucion_gamas.pkl')
-    print("   ✓ distribucion_gamas.pkl guardado")
-    
-    # Guardar datos completos del dataset procesado
-    features_copy.to_csv('dataset_procesado.csv', index=False)
-    print("   ✓ dataset_procesado.csv guardado")
-    
-except Exception as e:
-    print(f"   ❌ Error guardando archivos: {e}")
-    exit(1)
+for filename, obj in archivos.items():
+    joblib.dump(obj, filename)
+    print(f"   ✓ {filename}")
 
-# Mostrar estadísticas finales
+promedios.to_csv('clusters_promedios.csv', index=False)
+print("   ✓ clusters_promedios.csv")
+
+# 8. Estadísticas finales
 print("\n" + "="*50)
-print("✅ Modelo entrenado y guardado exitosamente")
+print("✅ Modelo entrenado exitosamente")
 print("="*50)
-print(f"\nTotal de dispositivos: {len(features_copy)}")
+print(f"\nTotal dispositivos: {len(features)}")
 print("\nDistribución por gama:")
 for gama, cantidad in sorted(distribucion.items()):
-    porcentaje = (cantidad / len(features_copy)) * 100
-    print(f"  - {gama}: {cantidad} dispositivos ({porcentaje:.1f}%)")
+    porcentaje = (cantidad / len(features)) * 100
+    print(f"  - {gama}: {cantidad} ({porcentaje:.1f}%)")
 
-print("\nEstadísticas por gama:")
-print("-"*50)
-
-for cluster in sorted(mapeo.keys()):
-    gama = mapeo[cluster]
-    cluster_data = promedios[promedios['cluster'] == cluster].iloc[0]
-    
+print("\nPromedios por gama:")
+print("-" * 50)
+for cluster_id in sorted(mapeo.keys()):
+    gama = mapeo[cluster_id]
+    cd = promedios[promedios['cluster'] == cluster_id].iloc[0]
     print(f"\n{gama}:")
-    print(f"  - Procesador: {cluster_data['num_cores']:.0f} núcleos @ {cluster_data['processor_speed']:.1f} GHz")
-    print(f"  - RAM: {cluster_data['ram_capacity']:.0f} GB")
-    print(f"  - Almacenamiento: {cluster_data['internal_memory']:.0f} GB")
-    print(f"  - Batería: {cluster_data['battery_capacity']:.0f} mAh")
-    print(f"  - Cámara principal: {cluster_data['primary_camera_rear']:.0f} MP")
-    print(f"  - Precio promedio: ${cluster_data['price']:.0f} USD")
+    print(f"  - Procesador: {cd['num_cores']:.0f} núcleos @ {cd['processor_speed']:.1f} GHz")
+    print(f"  - RAM: {cd['ram_capacity']:.0f} GB | Almacenamiento: {cd['internal_memory']:.0f} GB")
+    print(f"  - Batería: {cd['battery_capacity']:.0f} mAh | Cámara: {cd['primary_camera_rear']:.0f} MP")
+    print(f"  - Precio: ${cd['price']:.0f} USD")
 
 print("\n" + "="*50)
-print("Ahora puedes ejecutar: python app.py")
+print("Ejecuta ahora: python app.py")
 print("="*50 + "\n")
