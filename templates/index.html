@@ -4,12 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clasificador de Celulares</title>
+  <title>Clasificador de Celulares - ML</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
 <body>
+  <!-- Fondo animado -->
   <div class="phone-background">
     <div class="floating-phone"><i class="fas fa-mobile-alt"></i></div>
     <div class="floating-phone"><i class="fas fa-tablet-alt"></i></div>
@@ -20,17 +21,18 @@
   </div>
 
   <div class="container">
-    <!-- Pantalla de inicio -->
+    <!-- ===== PANTALLA DE INICIO ===== -->
     <div class="intro" id="introScreen">
       <h1 class="fade-in-up">¿Qué gama de celular necesitas?</h1>
-      <p class="fade-in-up delay-1">Descubre el celular perfecto para ti</p>
+      <p class="fade-in-up delay-1">Descubre la clasificación de tu dispositivo ideal</p>
       <button class="btn fade-in-up delay-2" id="startBtn">
-        <i class="fas fa-play"></i> Comenzar
+        <i class="fas fa-play"></i> Comenzar Evaluación
       </button>
     </div>
 
-    <!-- Formulario -->
+    <!-- ===== FORMULARIO MULTI-PASO ===== -->
     <div class="form-container hidden" id="formScreen">
+      <!-- Barra de progreso -->
       <div class="progress-container">
         <div class="progress-bar-bg">
           <div class="progress-bar" id="progressBar"></div>
@@ -45,16 +47,18 @@
             <div class="step-icon"><i class="fas fa-microchip"></i></div>
             <div>
               <h2>Procesador</h2>
-              <p>Características del procesador</p>
+              <p>Especificaciones del procesador</p>
             </div>
           </div>
           <div class="form-group">
-            <label for="num_cores">Núcleos del procesador</label>
-            <input type="number" id="num_cores" name="num_cores" min="1" max="16" required>
+            <label for="num_cores">Número de núcleos</label>
+            <input type="number" id="num_cores" name="num_cores" min="1" max="16" required 
+                   placeholder="Ej: 8">
           </div>
           <div class="form-group">
-            <label for="processor_speed">Velocidad (GHz)</label>
-            <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="1.0" max="4.0" required>
+            <label for="processor_speed">Velocidad del procesador (GHz)</label>
+            <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="0.5" max="4.0" required
+                   placeholder="Ej: 2.5">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary" disabled>Anterior</button>
@@ -68,16 +72,17 @@
             <div class="step-icon"><i class="fas fa-battery-full"></i></div>
             <div>
               <h2>Batería</h2>
-              <p>Capacidad y carga rápida</p>
+              <p>Capacidad y características de carga</p>
             </div>
           </div>
           <div class="form-group">
-            <label for="battery_capacity">Capacidad (mAh)</label>
-            <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required>
+            <label for="battery_capacity">Capacidad de batería (mAh)</label>
+            <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required
+                   placeholder="Ej: 4000">
           </div>
           <div class="checkbox-group">
             <input type="checkbox" id="fast_charging_available" name="fast_charging_available" value="1">
-            <label for="fast_charging_available">Carga rápida disponible</label>
+            <label for="fast_charging_available">¿Tiene carga rápida?</label>
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -91,16 +96,18 @@
             <div class="step-icon"><i class="fas fa-memory"></i></div>
             <div>
               <h2>Memoria</h2>
-              <p>RAM y almacenamiento</p>
+              <p>RAM y almacenamiento interno</p>
             </div>
           </div>
           <div class="form-group">
-            <label for="ram_capacity">RAM (GB)</label>
-            <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="16" required>
+            <label for="ram_capacity">Memoria RAM (GB)</label>
+            <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="32" required
+                   placeholder="Ej: 8">
           </div>
           <div class="form-group">
-            <label for="internal_memory">Almacenamiento (GB)</label>
-            <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required>
+            <label for="internal_memory">Almacenamiento interno (GB)</label>
+            <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required
+                   placeholder="Ej: 128">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -118,16 +125,19 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="screen_size">Tamaño (pulgadas)</label>
-            <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required>
+            <label for="screen_size">Tamaño de pantalla (pulgadas)</label>
+            <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required
+                   placeholder="Ej: 6.5">
           </div>
           <div class="form-group">
-            <label for="resolution_width">Resolución horizontal (px)</label>
-            <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required>
+            <label for="resolution_width">Resolución horizontal (píxeles)</label>
+            <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required
+                   placeholder="Ej: 1080">
           </div>
           <div class="form-group">
-            <label for="resolution_height">Resolución vertical (px)</label>
-            <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2160" required>
+            <label for="resolution_height">Resolución vertical (píxeles)</label>
+            <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2400" required
+                   placeholder="Ej: 2160">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -141,20 +151,23 @@
             <div class="step-icon"><i class="fas fa-camera"></i></div>
             <div>
               <h2>Cámara</h2>
-              <p>Especificaciones de cámara</p>
+              <p>Sistema de cámaras</p>
             </div>
           </div>
           <div class="form-group">
-            <label for="num_rear_cameras">Cámaras traseras</label>
-            <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required>
+            <label for="num_rear_cameras">Número de cámaras traseras</label>
+            <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required
+                   placeholder="Ej: 3">
           </div>
           <div class="form-group">
-            <label for="primary_camera_rear">Cámara principal (MP)</label>
-            <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required>
+            <label for="primary_camera_rear">Cámara principal trasera (MP)</label>
+            <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required
+                   placeholder="Ej: 48">
           </div>
           <div class="form-group">
             <label for="primary_camera_front">Cámara frontal (MP)</label>
-            <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required>
+            <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required
+                   placeholder="Ej: 16">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -172,58 +185,73 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="price">Precio (USD)</label>
-            <input type="number" id="price" name="price" min="50" required>
+            <label for="price">Precio en dólares (USD)</label>
+            <input type="number" id="price" name="price" min="50" max="5000" required
+                   placeholder="Ej: 350">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
             <button type="submit" class="btn" id="submitBtn">
-              <i class="fas fa-chart-bar"></i> Ver resultado
+              <i class="fas fa-chart-bar"></i> Ver Resultado
             </button>
           </div>
         </div>
       </form>
     </div>
 
-    <!-- Resultados -->
+    <!-- ===== PANTALLA DE RESULTADOS ===== -->
     <div class="result-container hidden" id="resultScreen">
       <div class="result-icon"><i class="fas fa-mobile-alt"></i></div>
       <h1 class="result-title" id="resultGama">Gama Media</h1>
-      <p class="result-subtitle">Basado en tus características</p>
+      <p class="result-subtitle">Clasificación basada en análisis de Machine Learning</p>
 
+      <!-- Características promedio de la gama -->
       <div class="result-card">
-        <h3>Características promedio de esta gama</h3>
+        <h3><i class="fas fa-chart-line"></i> Características promedio de la gama</h3>
         <ul class="features-list" id="featuresList"></ul>
       </div>
 
-      <div class="chart-container">
-        <h3>Comparación con tu gama (Diferencias relativas)</h3>
-        <canvas id="chartDifRel"></canvas>
+      <!-- Gráficos en disposición de grid -->
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3>Comparación relativa por categoría</h3>
+          <canvas id="chartDifRel"></canvas>
+        </div>
+
+        <div class="chart-container">
+          <h3>Distribución de dispositivos</h3>
+          <canvas id="chartDistribution"></canvas>
+        </div>
+
+        <div class="chart-container" style="grid-column: 1 / -1;">
+          <h3>Visualización de clusters (PCA)</h3>
+          <canvas id="chartScatter"></canvas>
+        </div>
       </div>
 
-      <div class="chart-container">
-        <h3>Dispersión </h3>
-        <canvas id="chartScatter"></canvas>
-      </div>
-
-      <div class="chart-container">
-        <h3>Distribución de gamas</h3>
-        <canvas id="chartDistribution"></canvas>
-      </div>
-
+      <!-- Explicación detallada -->
       <div class="explanation">
-        <h3>¿Por qué esta gama?</h3>
-        <p>Basándonos en el análisis de <strong id="totalDispositivos">0</strong> dispositivos, tu celular se clasifica
-          en la <strong id="explanationGama">Media</strong>.</p>
-        <p>Los factores más determinantes fueron: <strong id="keyFactors">-</strong>.</p>
+        <h3><i class="fas fa-info-circle"></i> ¿Por qué esta clasificación?</h3>
+        <p>
+          Basándonos en el análisis de <strong id="totalDispositivos">0</strong> dispositivos mediante 
+          clustering K-Means, tu celular ha sido clasificado en la <strong id="explanationGama">Media</strong>.
+        </p>
+        <p>
+          Los factores más determinantes en esta clasificación fueron: <span id="keyFactors">-</span>
+        </p>
+        <p>
+          <em>Esta clasificación se basa en patrones identificados en el dataset mediante algoritmos 
+          de aprendizaje no supervisado, considerando múltiples características técnicas del dispositivo.</em>
+        </p>
       </div>
 
       <button type="button" class="btn" id="restartBtn">
-        <i class="fas fa-redo"></i> Nueva evaluación
+        <i class="fas fa-redo"></i> Nueva Evaluación
       </button>
     </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>

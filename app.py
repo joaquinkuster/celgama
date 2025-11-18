@@ -6,125 +6,202 @@ import os
 from sklearn.decomposition import PCA
 from sklearn.metrics import euclidean_distances
 
+# ===== CONFIGURACIÓN DE LA APLICACIÓN =====
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave_secreta_default')
 
-# Columnas del modelo
+# ===== DEFINICIÓN DE COLUMNAS (FEATURES) =====
+# Estas son todas las características que el modelo utiliza para clasificar
 COLUMNAS = [
-    'num_cores', 'processor_speed', 'battery_capacity',
-    'fast_charging_available', 'ram_capacity', 'internal_memory',
-    'screen_size', 'resolution_width', 'resolution_height',
-    'num_rear_cameras', 'primary_camera_rear', 'primary_camera_front', 'price'
+    'num_cores',                    # Número de núcleos del procesador
+    'processor_speed',              # Velocidad del procesador (GHz)
+    'battery_capacity',             # Capacidad de batería (mAh)
+    'fast_charging_available',      # Carga rápida disponible (1=Sí, 0=No)
+    'ram_capacity',                 # Memoria RAM (GB)
+    'internal_memory',              # Almacenamiento interno (GB)
+    'screen_size',                  # Tamaño de pantalla (pulgadas)
+    'resolution_width',             # Resolución horizontal (píxeles)
+    'resolution_height',            # Resolución vertical (píxeles)
+    'num_rear_cameras',             # Número de cámaras traseras
+    'primary_camera_rear',          # Cámara principal trasera (MP)
+    'primary_camera_front',         # Cámara frontal (MP)
+    'price'                         # Precio (USD)
 ]
 
-# Cargar modelos
-modelos_ok = False
+# ===== CARGA DE MODELOS Y DATOS =====
+modelos_cargados = False
 try:
+    # Cargar el escalador (StandardScaler)
     scaler = joblib.load('scaler.pkl')
-    modelo = joblib.load('modelo_kmeans.pkl')
-    mapeo = joblib.load('mapeo_gama.pkl')
-    promedios = pd.read_csv('clusters_promedios.csv')
-    distribucion = joblib.load('distribucion_gamas.pkl')
-    modelos_ok = True
-    print("✅ Modelos cargados")
-except Exception as e:
-    print(f"❌ Error: {e}")
+    
+    # Cargar el modelo de clustering K-Means
+    modelo_kmeans = joblib.load('modelo_kmeans.pkl')
+    
+    # Cargar el mapeo de clusters a gamas (ej: {0: 'Gama Baja', 1: 'Gama Media', 2: 'Gama Alta'})
+    mapeo_gamas = joblib.load('mapeo_gama.pkl')
+    
+    # Cargar estadísticas de los clusters
+    promedios_clusters = pd.read_csv('clusters_promedios.csv')
+    
+    # Cargar distribución de dispositivos por gama
+    distribucion_gamas = joblib.load('distribucion_gamas.pkl')
+    
+    modelos_cargados = True
+    print("✅ Modelos cargados exitosamente")
+except Exception as error:
+    print(f"❌ Error al cargar modelos: {error}")
 
+# ===== RUTA PRINCIPAL =====
 @app.route('/')
 def index():
+    """Renderiza la página principal de la aplicación"""
     return render_template('index.html')
 
+# ===== API DE CLASIFICACIÓN =====
 @app.route('/api/resultado', methods=['POST'])
-def resultado_api():
-    if not modelos_ok:
-        return jsonify({'error': 'Modelos no cargados'}), 500
+def obtener_resultado():
+    """
+    Endpoint que recibe las características de un dispositivo y retorna:
+    - La gama predicha (Baja, Media, Alta)
+    - Características promedio de esa gama
+    - Factores clave que determinaron la clasificación
+    - Datos para visualización (gráficos)
+    """
+    
+    # Verificar que los modelos estén cargados
+    if not modelos_cargados:
+        return jsonify({'error': 'Modelos no disponibles. Ejecuta model.py primero.'}), 500
     
     try:
-        data = request.get_json()
+        # ===== 1. OBTENER Y VALIDAR DATOS =====
+        datos_json = request.get_json()
         
-        # Validar campos
-        for field in COLUMNAS:
-            if field not in data or data[field] == '':
-                return jsonify({'error': f'Campo faltante: {field}'}), 400
+        # Validar que todos los campos necesarios estén presentes
+        for campo in COLUMNAS:
+            if campo not in datos_json or datos_json[campo] == '':
+                return jsonify({'error': f'Campo faltante o vacío: {campo}'}), 400
         
-        # Convertir a valores numéricos
-        valores = []
-        for col in COLUMNAS:
-            if col == 'fast_charging_available':
-                valor = 1.0 if str(data.get(col, '0')) == '1' else 0.0
+        # ===== 2. CONVERTIR DATOS A FORMATO NUMÉRICO =====
+        valores_numericos = []
+        for columna in COLUMNAS:
+            if columna == 'fast_charging_available':
+                # Convertir a binario (1 o 0)
+                valor = 1.0 if str(datos_json.get(columna, '0')) == '1' else 0.0
             else:
                 try:
-                    valor = float(data[col])
+                    valor = float(datos_json[columna])
                 except ValueError:
-                    return jsonify({'error': f'Valor inválido: {col}'}), 400
-            valores.append(valor)
+                    return jsonify({'error': f'Valor inválido en campo: {columna}'}), 400
+            valores_numericos.append(valor)
 
-        datos = pd.DataFrame([valores], columns=COLUMNAS)
+        # Crear DataFrame con los datos del usuario
+        datos_usuario = pd.DataFrame([valores_numericos], columns=COLUMNAS)
         
-        # Predecir cluster
-        entrada = scaler.transform(datos)
-        cluster = modelo.predict(entrada)[0]
-        gama = mapeo[cluster]
+        # ===== 3. PREDECIR CLUSTER Y GAMA =====
+        # Escalar los datos (normalización)
+        datos_escalados = scaler.transform(datos_usuario)
         
-        # Obtener promedios del cluster
-        cluster_data = promedios[promedios['cluster'] == cluster].iloc[0]
-        promedio = {
-            'Núcleos': int(cluster_data['num_cores']),
-            'Velocidad (GHz)': round(cluster_data['processor_speed'], 1),
-            'Batería (mAh)': int(cluster_data['battery_capacity']),
-            'Carga rápida': 'Sí' if cluster_data['fast_charging_available'] > 0.5 else 'No',
-            'RAM (GB)': int(cluster_data['ram_capacity']),
-            'Almacenamiento (GB)': int(cluster_data['internal_memory']),
-            'Pantalla (pulg)': round(cluster_data['screen_size'], 1),
-            'Resolución': f"{int(cluster_data['resolution_width'])}x{int(cluster_data['resolution_height'])}",
-            'Cámaras traseras': int(cluster_data['num_rear_cameras']),
-            'Cámara principal (MP)': int(cluster_data['primary_camera_rear']),
-            'Cámara frontal (MP)': int(cluster_data['primary_camera_front']),
-            'Precio (USD)': f"${int(cluster_data['price'])}"
+        # Predecir el cluster
+        cluster_predicho = modelo_kmeans.predict(datos_escalados)[0]
+        
+        # Obtener la gama correspondiente al cluster
+        gama_predicha = mapeo_gamas[cluster_predicho]
+        
+        # ===== 4. OBTENER ESTADÍSTICAS DEL CLUSTER =====
+        datos_cluster = promedios_clusters[promedios_clusters['cluster'] == cluster_predicho].iloc[0]
+        
+        # Crear diccionario con características promedio de la gama
+        caracteristicas_promedio = {
+            'Núcleos': int(datos_cluster['num_cores']),
+            'Velocidad (GHz)': round(datos_cluster['processor_speed'], 1),
+            'Batería (mAh)': int(datos_cluster['battery_capacity']),
+            'Carga rápida': 'Sí' if datos_cluster['fast_charging_available'] > 0.5 else 'No',
+            'RAM (GB)': int(datos_cluster['ram_capacity']),
+            'Almacenamiento (GB)': int(datos_cluster['internal_memory']),
+            'Pantalla (pulg)': round(datos_cluster['screen_size'], 1),
+            'Ancho de resolución': int(datos_cluster['resolution_width']),
+            'Altura de resolución': int(datos_cluster['resolution_height']),
+            'Cámaras traseras': int(datos_cluster['num_rear_cameras']),
+            'Cámara principal (MP)': int(datos_cluster['primary_camera_rear']),
+            'Cámara frontal (MP)': int(datos_cluster['primary_camera_front']),
+            'Precio (USD)': f"${int(datos_cluster['price'])}"
         }
         
-        # Identificar factores clave (diferencias relativas reales)
-        factores = calcular_factores_clave(datos.iloc[0].to_dict(), cluster_data)
+        # ===== 5. CALCULAR FACTORES CLAVE =====
+        factores_determinantes = calcular_factores_clave(
+            datos_usuario.iloc[0].to_dict(), 
+            datos_cluster
+        )
         
-        # Datos para gráficos
-        dif_relativas = calcular_dif_relativas(entrada, cluster)
+        # ===== 6. CALCULAR DIFERENCIAS RELATIVAS =====
+        diferencias_relativas = calcular_diferencias_relativas(
+            datos_escalados, 
+            cluster_predicho
+        )
         
-        # Reducir a 2D (solo una vez por petición)
+        # ===== 7. ANÁLISIS PCA (VISUALIZACIÓN 2D) =====
+        # Reducir dimensionalidad para visualización
         pca = PCA(n_components=2)
-        centroides_scaled = modelo.cluster_centers_
-        pca.fit(centroides_scaled)
+        centroides_escalados = modelo_kmeans.cluster_centers_
+        pca.fit(centroides_escalados)
 
-        # Transformar clusters y el usuario al nuevo espacio 2D
-        clusters_2d = pca.transform(centroides_scaled)
-        usuario_2d = pca.transform(entrada)
+        # Transformar clusters y usuario al espacio 2D
+        clusters_2d = pca.transform(centroides_escalados)
+        usuario_2d = pca.transform(datos_escalados)
 
-        # Calcular distancia del usuario a cada cluster
+        # Calcular distancias del usuario a cada cluster
         distancias = euclidean_distances(usuario_2d, clusters_2d)[0]
         cluster_mas_cercano = int(np.argmin(distancias))
         distancia_minima = round(float(distancias[cluster_mas_cercano]), 3)
-        gama_cercana = mapeo[cluster_mas_cercano]
+        gama_mas_cercana = mapeo_gamas[cluster_mas_cercano]
         
-        return jsonify({
-            'gama': gama,
-            'promedio': promedio,
-            'factores_clave': factores,
-            'dif_relativas': dif_relativas,
+        # ===== 8. PREPARAR RESPUESTA COMPLETA =====
+        respuesta = {
+            # Clasificación principal
+            'gama': gama_predicha,
+            
+            # Estadísticas del cluster
+            'promedio': caracteristicas_promedio,
+            
+            # Factores que más influyeron
+            'factores_clave': factores_determinantes,
+            
+            # Diferencias por categoría
+            'dif_relativas': diferencias_relativas,
+            
+            # Datos para visualización PCA
             'pca_clusters': clusters_2d.tolist(),
             'pca_usuario': usuario_2d[0].tolist(),
-            'gamas': [mapeo[i] for i in range(len(centroides_scaled))],
+            'gamas': [mapeo_gamas[i] for i in range(len(centroides_escalados))],
+            
+            # Información de proximidad
             'distancia_minima': distancia_minima,
-            'gama_cercana': gama_cercana,
-            'distribucion': distribucion,
-            'total_dispositivos': sum(distribucion.values())
-        })
+            'gama_cercana': gama_mas_cercana,
+            
+            # Distribución general
+            'distribucion': distribucion_gamas,
+            'total_dispositivos': sum(distribucion_gamas.values())
+        }
         
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify(respuesta)
+        
+    except Exception as error:
+        print(f"❌ Error en la predicción: {error}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(error)}), 500
 
-def calcular_factores_clave(usuario, cluster_data):
-    """Identifica los 3 factores con mayor diferencia relativa"""
-    campos = {
+
+# ===== FUNCIÓN: IDENTIFICAR FACTORES CLAVE =====
+def calcular_factores_clave(datos_usuario, datos_cluster):
+    """
+    Identifica las características con mayor diferencia relativa
+    respecto al promedio del cluster.
+    
+    Retorna los 5 factores más relevantes ordenados por importancia.
+    """
+    # Mapeo de nombres técnicos a nombres legibles
+    mapeo_nombres = {
         'price': 'precio',
         'ram_capacity': 'memoria RAM',
         'primary_camera_rear': 'cámara principal',
@@ -134,60 +211,101 @@ def calcular_factores_clave(usuario, cluster_data):
     }
     
     diferencias = []
-    for campo, nombre in campos.items():
-        val_usuario = usuario[campo]
-        val_promedio = cluster_data[campo]
-        
-        if val_promedio > 0:
-            dif_rel = abs(val_usuario - val_promedio) / val_promedio
-            diferencias.append((nombre, dif_rel))
     
+    for campo_tecnico, nombre_legible in mapeo_nombres.items():
+        valor_usuario = datos_usuario[campo_tecnico]
+        valor_promedio = datos_cluster[campo_tecnico]
+        
+        # Calcular diferencia relativa (evitar división por cero)
+        if valor_promedio > 0:
+            diferencia_relativa = abs(valor_usuario - valor_promedio) / valor_promedio
+            diferencias.append((nombre_legible, diferencia_relativa))
+    
+    # Ordenar por diferencia (de menor a mayor) y tomar los 5 primeros
     diferencias.sort(key=lambda x: x[1], reverse=False)
-    return [f[0] for f in diferencias[:5]]
+    return [factor[0] for factor in diferencias[:5]]
 
-def calcular_dif_relativas(usuario_scaled, cluster):
-    """Calcula diferencias relativas y puntajes escalados por categoría"""
+
+# ===== FUNCIÓN: CALCULAR DIFERENCIAS POR CATEGORÍA =====
+def calcular_diferencias_relativas(datos_usuario_escalados, cluster):
+    """
+    Calcula diferencias relativas agrupadas por categorías técnicas.
+    
+    Categorías:
+    - Procesador: núcleos, velocidad
+    - Memoria: RAM, almacenamiento
+    - Pantalla: tamaño, resolución
+    - Cámara: número de cámaras, megapíxeles
+    - Batería: capacidad, carga rápida
+    - Precio: costo del dispositivo
+    """
+    
+    # Definir categorías y sus índices en el array de features
     categorias = {
-        'Procesador': [0, 1],
-        'Memoria': [4, 5],
-        'Pantalla': [6, 7, 8],
-        'Cámara': [9, 10, 11],
-        'Batería': [2, 3],
-        'Precio': [12]
+        'Procesador': [0, 1],          # num_cores, processor_speed
+        'Memoria': [4, 5],              # ram_capacity, internal_memory
+        'Pantalla': [6, 7, 8],          # screen_size, resolution_width, resolution_height
+        'Cámara': [9, 10, 11],          # num_rear_cameras, primary_camera_rear, primary_camera_front
+        'Batería': [2, 3],              # battery_capacity, fast_charging_available
+        'Precio': [12]                  # price
     }
 
-    # ---- Cálculo de valores base ----
-    cluster_row = promedios[promedios['cluster'] == cluster].iloc[0]
-    cluster_valores = cluster_row[COLUMNAS].values.reshape(1, -1)
+    # Obtener valores promedio del cluster
+    fila_cluster = promedios_clusters[promedios_clusters['cluster'] == cluster].iloc[0]
+    valores_cluster = fila_cluster[COLUMNAS].values.reshape(1, -1)
 
-    # Convertir a DataFrame para cálculos relativos
-    df_cluster = pd.DataFrame(cluster_valores, columns=COLUMNAS)
-    df_usuario = pd.DataFrame(scaler.inverse_transform(usuario_scaled), columns=COLUMNAS)
+    # Convertir datos escalados de vuelta a escala original
+    df_cluster = pd.DataFrame(valores_cluster, columns=COLUMNAS)
+    df_usuario = pd.DataFrame(
+        scaler.inverse_transform(datos_usuario_escalados), 
+        columns=COLUMNAS
+    )
 
-    # ---- 1️⃣ Diferencias relativas por categoría ----
-    diff_relativas = {}
-    for cat, indices in categorias.items():
-        difs = []
-        for idx in indices:
-            col = COLUMNAS[idx]
-            v_user = df_usuario.iloc[0][col]
-            v_cluster = df_cluster.iloc[0][col]
-            if v_cluster != 0:
-                difs.append((v_user - v_cluster) / v_cluster)
-        diff_relativas[cat] = float(np.mean(difs)) if difs else 0.0
+    # Calcular diferencias relativas por categoría
+    diferencias_por_categoria = {}
+    
+    for nombre_categoria, indices in categorias.items():
+        diferencias_parciales = []
+        
+        for indice in indices:
+            columna = COLUMNAS[indice]
+            valor_usuario = df_usuario.iloc[0][columna]
+            valor_cluster = df_cluster.iloc[0][columna]
+            
+            # Calcular diferencia relativa (evitar división por cero)
+            if valor_cluster != 0:
+                diferencia = (valor_usuario - valor_cluster) / valor_cluster
+                diferencias_parciales.append(diferencia)
+        
+        # Promedio de diferencias en la categoría
+        diferencias_por_categoria[nombre_categoria] = float(
+            np.mean(diferencias_parciales)
+        ) if diferencias_parciales else 0.0
 
-    return diff_relativas
+    return diferencias_por_categoria
 
+
+# ===== INICIO DEL SERVIDOR =====
 if __name__ == '__main__':
+    # Crear directorios necesarios
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     
-    print("\n" + "="*50)
-    print("Servidor Flask - Clasificador de Celulares")
-    print("="*50)
-    if not modelos_ok:
-        print("⚠️  ADVERTENCIA: Ejecuta 'python model.py' primero")
-    print("URL: http://127.0.0.1:5000")
-    print("="*50 + "\n")
+    print("\n" + "="*60)
+    print("🚀 SERVIDOR FLASK - CLASIFICADOR DE CELULARES")
+    print("="*60)
     
+    if not modelos_cargados:
+        print("⚠️  ADVERTENCIA: Los modelos no están cargados.")
+        print("   Ejecuta primero: python model.py")
+    else:
+        print(f"✅ Modelos cargados correctamente")
+        print(f"📊 Distribución de gamas:")
+        for gama, cantidad in distribucion_gamas.items():
+            print(f"   - {gama}: {cantidad} dispositivos")
+    
+    print(f"\n🌐 Servidor corriendo en: http://127.0.0.1:5000")
+    print("="*60 + "\n")
+    
+    # Iniciar servidor en modo desarrollo
     app.run(debug=True, host='127.0.0.1', port=5000)
