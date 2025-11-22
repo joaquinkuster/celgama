@@ -55,6 +55,27 @@ COLUMNAS: List[str] = [
     'price'                         # Precio (USD)
 ]
 
+# Campos obligatorios en la petición
+CAMPOS_OBLIGATORIOS: List[str] = [
+    'price',                        # Precio (USD)
+    'num_cores',                    # Número de núcleos del procesador
+    'ram_capacity',                 # Memoria RAM (GB)
+    'internal_memory'               # Almacenamiento interno (GB)
+]
+
+# Valores por defecto para campos opcionales (basados en promedios del mercado)
+VALORES_POR_DEFECTO: Dict[str, float] = {
+    'processor_speed': 2.0,          # 2.0 GHz
+    'battery_capacity': 4000.0,      # 4000 mAh
+    'fast_charging_available': 1.0,  # Sí (mayoría tiene carga rápida)
+    'screen_size': 6.5,              # 6.5 pulgadas
+    'resolution_width': 1080.0,      # Full HD
+    'resolution_height': 2340.0,     # Full HD+
+    'num_rear_cameras': 3.0,         # 3 cámaras traseras
+    'primary_camera_rear': 48.0,     # 48 MP
+    'primary_camera_front': 13.0     # 13 MP
+}
+
 # ===== CARGA DE MODELOS Y DATOS =====
 modelos_cargados: bool = False
 scaler = None
@@ -62,6 +83,7 @@ modelo_kmeans = None
 mapeo_gamas: Dict[int, str] = {}
 promedios_clusters: Optional[pd.DataFrame] = None
 distribucion_gamas: Dict[str, int] = {}
+datos_originales: Optional[pd.DataFrame] = None  # Para calcular promedios reales
 
 try:
     # Cargar el escalador (StandardScaler)
@@ -78,6 +100,14 @@ try:
     
     # Cargar distribución de dispositivos por gama
     distribucion_gamas = joblib.load('distribucion_gamas.pkl')
+    
+    # Cargar datos originales para calcular promedios
+    try:
+        datos_originales = pd.read_csv('data/celulares.csv')
+        # Calcular promedios reales del dataset y actualizar VALORES_POR_DEFECTO
+        actualizar_valores_por_defecto(datos_originales)
+    except Exception as e:
+        print(f"⚠️  No se pudieron cargar datos originales, usando valores por defecto estáticos: {e}")
     
     modelos_cargados = True
     print("✅ Modelos cargados exitosamente")
@@ -132,13 +162,16 @@ def obtener_resultado() -> Tuple[Dict[str, Any], int]:
         # ===== 1. OBTENER Y VALIDAR DATOS =====
         datos_json = request.get_json()
         
-        # Validar que todos los campos necesarios estén presentes
-        for campo in COLUMNAS:
+        # Validar solo campos obligatorios
+        for campo in CAMPOS_OBLIGATORIOS:
             if campo not in datos_json or datos_json[campo] == '':
-                return jsonify({'error': f'Campo faltante o vacío: {campo}'}), 400
+                return jsonify({'error': f'Campo obligatorio faltante o vacío: {campo}'}), 400
+        
+        # Completar datos faltantes con valores por defecto
+        datos_completos = completar_datos_faltantes(datos_json)
         
         # ===== 2. CONVERTIR DATOS A FORMATO NUMÉRICO =====
-        valores_numericos = convertir_datos_a_numericos(datos_json)
+        valores_numericos = convertir_datos_a_numericos(datos_completos)
         if isinstance(valores_numericos, tuple):  # Error
             return valores_numericos
         
@@ -203,7 +236,10 @@ def obtener_resultado() -> Tuple[Dict[str, Any], int]:
             
             # Distribución general
             'distribucion': distribucion_gamas,
-            'total_dispositivos': sum(distribucion_gamas.values())
+            'total_dispositivos': sum(distribucion_gamas.values()),
+            
+            # Información sobre datos completados
+            'datos_completados': identificar_campos_completados(datos_json)
         }
         
         return jsonify(respuesta)
@@ -216,6 +252,69 @@ def obtener_resultado() -> Tuple[Dict[str, Any], int]:
 
 
 # ===== FUNCIONES AUXILIARES =====
+
+def actualizar_valores_por_defecto(df: pd.DataFrame) -> None:
+    """
+    Actualiza los valores por defecto con los promedios reales del dataset.
+    
+    Args:
+        df: DataFrame con los datos originales
+    """
+    global VALORES_POR_DEFECTO
+    
+    for campo in VALORES_POR_DEFECTO.keys():
+        if campo in df.columns:
+            if campo == 'fast_charging_available':
+                # Para campos binarios, usar la moda (valor más frecuente)
+                VALORES_POR_DEFECTO[campo] = float(df[campo].mode()[0])
+            else:
+                # Para campos numéricos, usar la mediana (más robusta que la media)
+                VALORES_POR_DEFECTO[campo] = float(df[campo].median())
+    
+    print("📊 Valores por defecto actualizados con promedios del dataset")
+
+
+def completar_datos_faltantes(datos_json: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Completa los datos faltantes con valores por defecto.
+    
+    Args:
+        datos_json: Diccionario con los datos del formulario (puede tener campos faltantes)
+        
+    Returns:
+        Diccionario con todos los campos necesarios completados
+    """
+    datos_completos = datos_json.copy()
+    
+    for columna in COLUMNAS:
+        # Si el campo no está presente o está vacío, usar valor por defecto
+        if columna not in datos_completos or datos_completos[columna] == '' or datos_completos[columna] is None:
+            if columna in VALORES_POR_DEFECTO:
+                datos_completos[columna] = VALORES_POR_DEFECTO[columna]
+            # Los campos obligatorios ya fueron validados, no deberían llegar aquí
+    
+    return datos_completos
+
+
+def identificar_campos_completados(datos_json: Dict[str, Any]) -> List[str]:
+    """
+    Identifica qué campos fueron completados automáticamente.
+    
+    Args:
+        datos_json: Diccionario con los datos originales del usuario
+        
+    Returns:
+        Lista con los nombres de los campos que fueron completados
+    """
+    campos_completados = []
+    
+    for columna in COLUMNAS:
+        if columna not in datos_json or datos_json[columna] == '' or datos_json[columna] is None:
+            if columna in VALORES_POR_DEFECTO:
+                campos_completados.append(columna)
+    
+    return campos_completados
+
 
 def convertir_datos_a_numericos(datos_json: Dict[str, Any]) -> List[float]:
     """
