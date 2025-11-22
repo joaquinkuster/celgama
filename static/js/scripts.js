@@ -221,6 +221,11 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#explanationGama').textContent = resultado.gama.replace('Gama ', '');
         $('#totalDispositivos').textContent = resultado.total_dispositivos;
 
+        // Mostrar advertencia si está en zona ambigua
+        if (resultado.es_ambiguo) {
+            mostrarAdvertenciaAmbiguedad(resultado);
+        }
+
         // Construir explicación extendida con diferencias
         const factoresClave = resultado.factores_clave.slice(0, 3);
         const diferenciasTexto = construirExplicacionDiferencias(resultado.dif_relativas, factoresClave);
@@ -287,6 +292,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         
         return explicaciones.join(', ') + '.';
+    }
+
+    // ===== ADVERTENCIA DE AMBIGÜEDAD =====
+    function mostrarAdvertenciaAmbiguedad(resultado) {
+        // Crear contenedor de advertencia si no existe
+        let advertencia = $('.advertencia-ambiguedad');
+        if (!advertencia) {
+            advertencia = document.createElement('div');
+            advertencia.className = 'advertencia-ambiguedad';
+            $('#resultGama').parentNode.insertBefore(advertencia, $('#resultGama').nextSibling);
+        }
+
+        // Construir lista de gamas cercanas
+        const gamasCercanas = resultado.clusters_cercanos
+            .map(c => `<strong>${c.gama}</strong> (${(c.probabilidad * 100).toFixed(1)}%)`)
+            .join(', ');
+
+        advertencia.innerHTML = `
+            <div class="alerta-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>⚠️ Dispositivo en zona límite</strong>
+                    <p>Tu dispositivo está muy cerca de múltiples gamas: ${gamasCercanas}.</p>
+                    <p>La clasificación puede variar según pequeños cambios en las especificaciones.</p>
+                </div>
+            </div>
+        `;
+
+        // Animar entrada
+        anime({
+            targets: advertencia,
+            opacity: [0, 1],
+            translateY: [-20, 0],
+            duration: 600,
+            easing: 'easeOutQuad'
+        });
     }
 
     // ===== COMPARACIÓN USUARIO VS PROMEDIO =====
@@ -417,7 +458,10 @@ document.addEventListener('DOMContentLoaded', function () {
             'Gama Baja': 'rgba(244, 67, 54, 0.8)'
         };
 
-        console.log(resultado.pca_usuario);
+        // Color del usuario - más brillante si está en zona ambigua
+        const colorUsuario = resultado.es_ambiguo 
+            ? 'rgba(255, 152, 0, 1)'  // Naranja para ambiguo
+            : 'rgba(33, 150, 243, 1)'; // Azul para claro
 
         graficoDispersion = new Chart(ctx, {
             type: 'scatter',
@@ -451,7 +495,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         data: resultado.pca_clusters.map((punto, indice) => ({
                             x: punto[0],
                             y: punto[1],
-                            gama: resultado.gamas[indice]
+                            gama: resultado.gamas[indice],
+                            probabilidad: resultado.probabilidades[resultado.gamas[indice]]
                         })),
                         backgroundColor: resultado.gamas.map(g => coloresPorGama[g]),
                         pointRadius: 12,
@@ -465,21 +510,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         label: 'Tu dispositivo',
                         data: [{ 
                             x: resultado.pca_usuario[0], 
-                            y: resultado.pca_usuario[1] 
+                            y: resultado.pca_usuario[1],
+                            gama_predicha: resultado.gama,
+                            es_ambiguo: resultado.es_ambiguo
                         }],
-                        backgroundColor: 'rgba(33, 150, 243, 1)',
-                        pointRadius: 10,
-                        pointHoverRadius: 12,
+                        backgroundColor: colorUsuario,
+                        pointRadius: 14,
+                        pointHoverRadius: 16,
                         pointStyle: 'star',
                         borderColor: '#fff',
-                        borderWidth: 2,
+                        borderWidth: 3,
                         order: 999
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,  // FIXED: Permite mejor responsividad
+                aspectRatio: 2,  // FIXED: Ratio de aspecto más apropiado
                 interaction: {
                     mode: 'point',
                     intersect: true
@@ -503,9 +551,29 @@ document.addEventListener('DOMContentLoaded', function () {
                         callbacks: {
                             label: (contexto) => {
                                 if (contexto.dataset.label === 'Tu dispositivo') {
-                                    return `Tu dispositivo (más cercano: ${resultado.gama_cercana}, distancia: ${resultado.distancia_minima.toFixed(3)})`;
+                                    const lineas = [
+                                        `Tu dispositivo: ${contexto.raw.gama_predicha}`,
+                                        `Distancia al centroide: ${resultado.distancia_minima.toFixed(3)}`
+                                    ];
+                                    
+                                    if (contexto.raw.es_ambiguo) {
+                                        lineas.push('⚠️ En zona límite entre gamas');
+                                    }
+                                    
+                                    // Agregar probabilidades
+                                    lineas.push('');
+                                    lineas.push('Probabilidades:');
+                                    for (const [gama, prob] of Object.entries(resultado.probabilidades)) {
+                                        lineas.push(`  ${gama}: ${(prob * 100).toFixed(1)}%`);
+                                    }
+                                    
+                                    return lineas;
                                 } else if (contexto.raw.gama) {
-                                    return `${contexto.raw.gama}`;
+                                    const prob = (contexto.raw.probabilidad * 100).toFixed(1);
+                                    return [
+                                        `${contexto.raw.gama}`,
+                                        `Probabilidad: ${prob}%`
+                                    ];
                                 }
                                 return '';
                             }

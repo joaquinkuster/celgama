@@ -1,3 +1,24 @@
+"""
+API Flask para Clasificación de Celulares
+==========================================
+
+Este módulo proporciona una API REST para clasificar celulares en gamas
+utilizando el modelo K-Means entrenado.
+
+Características principales:
+- Soft clustering con cálculo de probabilidades
+- Detección de zonas ambiguas entre clusters
+- Visualización con PCA
+- Análisis de factores determinantes
+
+Endpoints:
+- GET /: Página principal
+- POST /api/resultado: Clasificación de dispositivo
+
+Autor: Sistema de ML
+Fecha: 2025-11-20
+"""
+
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import joblib
@@ -5,14 +26,20 @@ import numpy as np
 import os
 from sklearn.decomposition import PCA
 from sklearn.metrics import euclidean_distances
+from typing import Dict, List, Tuple, Any, Optional
 
 # ===== CONFIGURACIÓN DE LA APLICACIÓN =====
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave_secreta_default')
 
-# ===== DEFINICIÓN DE COLUMNAS (FEATURES) =====
-# Estas son todas las características que el modelo utiliza para clasificar
-COLUMNAS = [
+# ===== CONSTANTES =====
+# Threshold para determinar si un dispositivo está en zona ambigua
+# Si la diferencia de distancias entre el cluster más cercano y el segundo
+# más cercano es menor a este porcentaje, se considera ambiguo
+AMBIGUITY_THRESHOLD: float = 0.15  # 15%
+
+# Definición de columnas (features) utilizadas por el modelo
+COLUMNAS: List[str] = [
     'num_cores',                    # Número de núcleos del procesador
     'processor_speed',              # Velocidad del procesador (GHz)
     'battery_capacity',             # Capacidad de batería (mAh)
@@ -29,7 +56,13 @@ COLUMNAS = [
 ]
 
 # ===== CARGA DE MODELOS Y DATOS =====
-modelos_cargados = False
+modelos_cargados: bool = False
+scaler = None
+modelo_kmeans = None
+mapeo_gamas: Dict[int, str] = {}
+promedios_clusters: Optional[pd.DataFrame] = None
+distribucion_gamas: Dict[str, int] = {}
+
 try:
     # Cargar el escalador (StandardScaler)
     scaler = joblib.load('scaler.pkl')
@@ -37,7 +70,7 @@ try:
     # Cargar el modelo de clustering K-Means
     modelo_kmeans = joblib.load('modelo_kmeans.pkl')
     
-    # Cargar el mapeo de clusters a gamas (ej: {0: 'Gama Baja', 1: 'Gama Media', 2: 'Gama Alta'})
+    # Cargar el mapeo de clusters a gamas
     mapeo_gamas = joblib.load('mapeo_gama.pkl')
     
     # Cargar estadísticas de los clusters
@@ -51,23 +84,46 @@ try:
 except Exception as error:
     print(f"❌ Error al cargar modelos: {error}")
 
-# ===== RUTA PRINCIPAL =====
+
+# ===== RUTAS =====
 @app.route('/')
-def index():
-    """Renderiza la página principal de la aplicación"""
+def index() -> str:
+    """
+    Renderiza la página principal de la aplicación.
+    
+    Returns:
+        HTML de la página principal
+    """
     return render_template('index.html')
 
-# ===== API DE CLASIFICACIÓN =====
+
 @app.route('/api/resultado', methods=['POST'])
-def obtener_resultado():
+def obtener_resultado() -> Tuple[Dict[str, Any], int]:
     """
-    Endpoint que recibe las características de un dispositivo y retorna:
-    - La gama predicha (Baja, Media, Alta)
-    - Características promedio de esa gama
-    - Factores clave que determinaron la clasificación
-    - Datos para visualización (gráficos)
-    """
+    Endpoint que recibe las características de un dispositivo y retorna la clasificación.
     
+    Proceso:
+    1. Valida los datos de entrada
+    2. Escala las características
+    3. Predice el cluster y calcula probabilidades
+    4. Detecta si está en zona ambigua
+    5. Calcula factores determinantes
+    6. Genera visualización PCA
+    
+    Returns:
+        Tupla con (respuesta JSON, código HTTP)
+        
+    Respuesta incluye:
+        - gama: Gama predicha (Baja, Media, Alta)
+        - promedio: Características promedio de la gama
+        - factores_clave: Factores que más influyeron
+        - dif_relativas: Diferencias por categoría
+        - pca_clusters: Coordenadas 2D de centroides
+        - pca_usuario: Coordenadas 2D del usuario
+        - es_ambiguo: Si está en zona límite entre gamas
+        - clusters_cercanos: Clusters dentro del threshold
+        - probabilidades: Probabilidad de pertenencia a cada cluster
+    """
     # Verificar que los modelos estén cargados
     if not modelos_cargados:
         return jsonify({'error': 'Modelos no disponibles. Ejecuta model.py primero.'}), 500
@@ -82,80 +138,41 @@ def obtener_resultado():
                 return jsonify({'error': f'Campo faltante o vacío: {campo}'}), 400
         
         # ===== 2. CONVERTIR DATOS A FORMATO NUMÉRICO =====
-        valores_numericos = []
-        for columna in COLUMNAS:
-            if columna == 'fast_charging_available':
-                # Convertir a binario (1 o 0)
-                valor = 1.0 if str(datos_json.get(columna, '0')) == '1' else 0.0
-            else:
-                try:
-                    valor = float(datos_json[columna])
-                except ValueError:
-                    return jsonify({'error': f'Valor inválido en campo: {columna}'}), 400
-            valores_numericos.append(valor)
-
+        valores_numericos = convertir_datos_a_numericos(datos_json)
+        if isinstance(valores_numericos, tuple):  # Error
+            return valores_numericos
+        
         # Crear DataFrame con los datos del usuario
         datos_usuario = pd.DataFrame([valores_numericos], columns=COLUMNAS)
         
-        # ===== 3. PREDECIR CLUSTER Y GAMA =====
-        # Escalar los datos (normalización)
+        # ===== 3. PREDECIR CLUSTER Y CALCULAR PROBABILIDADES =====
         datos_escalados = scaler.transform(datos_usuario)
-        
-        # Predecir el cluster
         cluster_predicho = modelo_kmeans.predict(datos_escalados)[0]
-        
-        # Obtener la gama correspondiente al cluster
         gama_predicha = mapeo_gamas[cluster_predicho]
         
-        # ===== 4. OBTENER ESTADÍSTICAS DEL CLUSTER =====
+        # ===== 4. SOFT CLUSTERING - CALCULAR DISTANCIAS Y PROBABILIDADES =====
+        soft_clustering_info = calcular_soft_clustering(datos_escalados, cluster_predicho)
+        
+        # ===== 5. OBTENER ESTADÍSTICAS DEL CLUSTER =====
         datos_cluster = promedios_clusters[promedios_clusters['cluster'] == cluster_predicho].iloc[0]
+        caracteristicas_promedio = formatear_caracteristicas_promedio(datos_cluster)
         
-        # Crear diccionario con características promedio de la gama
-        caracteristicas_promedio = {
-            'Núcleos': int(datos_cluster['num_cores']),
-            'Velocidad (GHz)': round(datos_cluster['processor_speed'], 1),
-            'Batería (mAh)': int(datos_cluster['battery_capacity']),
-            'Carga rápida': 'Sí' if datos_cluster['fast_charging_available'] > 0.5 else 'No',
-            'RAM (GB)': int(datos_cluster['ram_capacity']),
-            'Almacenamiento (GB)': int(datos_cluster['internal_memory']),
-            'Pantalla (pulg)': round(datos_cluster['screen_size'], 1),
-            'Ancho de resolución': int(datos_cluster['resolution_width']),
-            'Altura de resolución': int(datos_cluster['resolution_height']),
-            'Cámaras traseras': int(datos_cluster['num_rear_cameras']),
-            'Cámara principal (MP)': int(datos_cluster['primary_camera_rear']),
-            'Cámara frontal (MP)': int(datos_cluster['primary_camera_front']),
-            'Precio (USD)': f"${int(datos_cluster['price'])}"
-        }
-        
-        # ===== 5. CALCULAR FACTORES CLAVE =====
+        # ===== 6. CALCULAR FACTORES CLAVE =====
         factores_determinantes = calcular_factores_clave(
             datos_usuario.iloc[0].to_dict(), 
             datos_cluster
         )
         
-        # ===== 6. CALCULAR DIFERENCIAS RELATIVAS =====
+        # ===== 7. CALCULAR DIFERENCIAS RELATIVAS =====
         diferencias_relativas = calcular_diferencias_relativas(
             datos_escalados, 
             cluster_predicho
         )
         
-        # ===== 7. ANÁLISIS PCA (VISUALIZACIÓN 2D) =====
-        # Reducir dimensionalidad para visualización
-        pca = PCA(n_components=2)
-        centroides_escalados = modelo_kmeans.cluster_centers_
-        pca.fit(centroides_escalados)
-
-        # Transformar clusters y usuario al espacio 2D
-        clusters_2d = pca.transform(centroides_escalados)
-        usuario_2d = pca.transform(datos_escalados)
-
-        # Calcular distancias del usuario a cada cluster
-        distancias = euclidean_distances(usuario_2d, clusters_2d)[0]
-        cluster_mas_cercano = int(np.argmin(distancias))
-        distancia_minima = round(float(distancias[cluster_mas_cercano]), 3)
-        gama_mas_cercana = mapeo_gamas[cluster_mas_cercano]
+        # ===== 8. ANÁLISIS PCA (VISUALIZACIÓN 2D) =====
+        pca_info = calcular_pca_visualization(datos_escalados)
         
-        # ===== 8. PREPARAR RESPUESTA COMPLETA =====
+        # ===== 9. PREPARAR RESPUESTA COMPLETA =====
         respuesta = {
             # Clasificación principal
             'gama': gama_predicha,
@@ -170,13 +187,19 @@ def obtener_resultado():
             'dif_relativas': diferencias_relativas,
             
             # Datos para visualización PCA
-            'pca_clusters': clusters_2d.tolist(),
-            'pca_usuario': usuario_2d[0].tolist(),
-            'gamas': [mapeo_gamas[i] for i in range(len(centroides_escalados))],
+            'pca_clusters': pca_info['clusters_2d'],
+            'pca_usuario': pca_info['usuario_2d'],
+            'gamas': pca_info['gamas'],
             
-            # Información de proximidad
-            'distancia_minima': distancia_minima,
-            'gama_cercana': gama_mas_cercana,
+            # Información de proximidad (legacy)
+            'distancia_minima': soft_clustering_info['distancia_minima'],
+            'gama_cercana': soft_clustering_info['gama_cercana'],
+            
+            # Soft clustering - NUEVO
+            'es_ambiguo': soft_clustering_info['es_ambiguo'],
+            'clusters_cercanos': soft_clustering_info['clusters_cercanos'],
+            'probabilidades': soft_clustering_info['probabilidades'],
+            'todas_distancias': soft_clustering_info['todas_distancias'],
             
             # Distribución general
             'distribucion': distribucion_gamas,
@@ -192,13 +215,139 @@ def obtener_resultado():
         return jsonify({'error': str(error)}), 500
 
 
-# ===== FUNCIÓN: IDENTIFICAR FACTORES CLAVE =====
-def calcular_factores_clave(datos_usuario, datos_cluster):
+# ===== FUNCIONES AUXILIARES =====
+
+def convertir_datos_a_numericos(datos_json: Dict[str, Any]) -> List[float]:
+    """
+    Convierte los datos del formulario a valores numéricos.
+    
+    Args:
+        datos_json: Diccionario con los datos del formulario
+        
+    Returns:
+        Lista de valores numéricos en el orden de COLUMNAS
+        
+    Raises:
+        ValueError: Si algún valor no puede ser convertido
+    """
+    valores_numericos = []
+    for columna in COLUMNAS:
+        if columna == 'fast_charging_available':
+            # Convertir a binario (1 o 0)
+            valor = 1.0 if str(datos_json.get(columna, '0')) == '1' else 0.0
+        else:
+            try:
+                valor = float(datos_json[columna])
+            except ValueError:
+                return jsonify({'error': f'Valor inválido en campo: {columna}'}), 400
+        valores_numericos.append(valor)
+    
+    return valores_numericos
+
+
+def calcular_soft_clustering(datos_escalados: np.ndarray, cluster_predicho: int) -> Dict[str, Any]:
+    """
+    Calcula información de soft clustering: distancias a todos los centroides,
+    probabilidades de pertenencia, y detecta zonas ambiguas.
+    
+    Args:
+        datos_escalados: Datos del usuario escalados
+        cluster_predicho: Cluster predicho por K-Means
+        
+    Returns:
+        Diccionario con información de soft clustering:
+        - todas_distancias: Distancias a cada centroide
+        - probabilidades: Probabilidad de pertenencia a cada cluster
+        - es_ambiguo: Si está en zona ambigua
+        - clusters_cercanos: Lista de clusters cercanos
+        - distancia_minima: Distancia al cluster más cercano
+        - gama_cercana: Gama del cluster más cercano
+    """
+    # Calcular distancias a todos los centroides
+    centroides = modelo_kmeans.cluster_centers_
+    distancias = euclidean_distances(datos_escalados, centroides)[0]
+    
+    # Ordenar distancias para encontrar los más cercanos
+    indices_ordenados = np.argsort(distancias)
+    distancia_min = distancias[indices_ordenados[0]]
+    distancia_segunda = distancias[indices_ordenados[1]]
+    
+    # Calcular probabilidades usando softmax inverso de distancias
+    # Invertir distancias (más cerca = mayor probabilidad)
+    distancias_inv = 1.0 / (distancias + 1e-10)  # Evitar división por cero
+    probabilidades_raw = distancias_inv / np.sum(distancias_inv)
+    
+    # Convertir a diccionario con nombres de gamas
+    probabilidades = {
+        mapeo_gamas[i]: float(prob) 
+        for i, prob in enumerate(probabilidades_raw)
+    }
+    
+    # Detectar ambigüedad: si la diferencia relativa entre las dos distancias
+    # más cercanas es menor al threshold, es ambiguo
+    diferencia_relativa = abs(distancia_min - distancia_segunda) / distancia_min
+    es_ambiguo = bool(diferencia_relativa < AMBIGUITY_THRESHOLD)  # Convertir a bool nativo de Python
+    
+    # Identificar clusters cercanos (dentro del threshold)
+    clusters_cercanos = []
+    for idx in indices_ordenados:
+        diff_rel = abs(distancias[idx] - distancia_min) / distancia_min
+        if diff_rel <= AMBIGUITY_THRESHOLD:
+            clusters_cercanos.append({
+                'cluster_id': int(idx),
+                'gama': mapeo_gamas[idx],
+                'distancia': float(distancias[idx]),
+                'probabilidad': float(probabilidades_raw[idx])
+            })
+    
+    return {
+        'todas_distancias': {mapeo_gamas[i]: float(d) for i, d in enumerate(distancias)},
+        'probabilidades': probabilidades,
+        'es_ambiguo': es_ambiguo,
+        'clusters_cercanos': clusters_cercanos,
+        'distancia_minima': float(distancia_min),
+        'gama_cercana': mapeo_gamas[indices_ordenados[0]]
+    }
+
+
+def formatear_caracteristicas_promedio(datos_cluster: pd.Series) -> Dict[str, Any]:
+    """
+    Formatea las características promedio del cluster para la respuesta.
+    
+    Args:
+        datos_cluster: Serie con los datos promedio del cluster
+        
+    Returns:
+        Diccionario con características formateadas
+    """
+    return {
+        'Núcleos': int(datos_cluster['num_cores']),
+        'Velocidad (GHz)': round(datos_cluster['processor_speed'], 1),
+        'Batería (mAh)': int(datos_cluster['battery_capacity']),
+        'Carga rápida': 'Sí' if datos_cluster['fast_charging_available'] > 0.5 else 'No',
+        'RAM (GB)': int(datos_cluster['ram_capacity']),
+        'Almacenamiento (GB)': int(datos_cluster['internal_memory']),
+        'Pantalla (pulg)': round(datos_cluster['screen_size'], 1),
+        'Ancho de resolución': int(datos_cluster['resolution_width']),
+        'Altura de resolución': int(datos_cluster['resolution_height']),
+        'Cámaras traseras': int(datos_cluster['num_rear_cameras']),
+        'Cámara principal (MP)': int(datos_cluster['primary_camera_rear']),
+        'Cámara frontal (MP)': int(datos_cluster['primary_camera_front']),
+        'Precio (USD)': f"${int(datos_cluster['price'])}"
+    }
+
+
+def calcular_factores_clave(datos_usuario: Dict[str, float], datos_cluster: pd.Series) -> List[str]:
     """
     Identifica las características con mayor diferencia relativa
     respecto al promedio del cluster.
     
-    Retorna los 5 factores más relevantes ordenados por importancia.
+    Args:
+        datos_usuario: Diccionario con los datos del usuario
+        datos_cluster: Serie con los datos promedio del cluster
+        
+    Returns:
+        Lista con los 5 factores más relevantes ordenados por similitud
     """
     # Mapeo de nombres técnicos a nombres legibles
     mapeo_nombres = {
@@ -222,12 +371,12 @@ def calcular_factores_clave(datos_usuario, datos_cluster):
             diferencias.append((nombre_legible, diferencia_relativa))
     
     # Ordenar por diferencia (de menor a mayor) y tomar los 5 primeros
+    # Los factores con menor diferencia son los más determinantes
     diferencias.sort(key=lambda x: x[1], reverse=False)
     return [factor[0] for factor in diferencias[:5]]
 
 
-# ===== FUNCIÓN: CALCULAR DIFERENCIAS POR CATEGORÍA =====
-def calcular_diferencias_relativas(datos_usuario_escalados, cluster):
+def calcular_diferencias_relativas(datos_usuario_escalados: np.ndarray, cluster: int) -> Dict[str, float]:
     """
     Calcula diferencias relativas agrupadas por categorías técnicas.
     
@@ -238,8 +387,14 @@ def calcular_diferencias_relativas(datos_usuario_escalados, cluster):
     - Cámara: número de cámaras, megapíxeles
     - Batería: capacidad, carga rápida
     - Precio: costo del dispositivo
-    """
     
+    Args:
+        datos_usuario_escalados: Datos del usuario escalados
+        cluster: ID del cluster predicho
+        
+    Returns:
+        Diccionario con diferencias relativas por categoría
+    """
     # Definir categorías y sus índices en el array de features
     categorias = {
         'Procesador': [0, 1],          # num_cores, processor_speed
@@ -285,15 +440,44 @@ def calcular_diferencias_relativas(datos_usuario_escalados, cluster):
     return diferencias_por_categoria
 
 
+def calcular_pca_visualization(datos_escalados: np.ndarray) -> Dict[str, Any]:
+    """
+    Calcula la proyección PCA para visualización 2D.
+    
+    Args:
+        datos_escalados: Datos del usuario escalados
+        
+    Returns:
+        Diccionario con información de PCA:
+        - clusters_2d: Coordenadas 2D de los centroides
+        - usuario_2d: Coordenadas 2D del usuario
+        - gamas: Nombres de las gamas
+    """
+    # Reducir dimensionalidad para visualización
+    pca = PCA(n_components=2)
+    centroides_escalados = modelo_kmeans.cluster_centers_
+    pca.fit(centroides_escalados)
+
+    # Transformar clusters y usuario al espacio 2D
+    clusters_2d = pca.transform(centroides_escalados)
+    usuario_2d = pca.transform(datos_escalados)
+
+    return {
+        'clusters_2d': clusters_2d.tolist(),
+        'usuario_2d': usuario_2d[0].tolist(),
+        'gamas': [mapeo_gamas[i] for i in range(len(centroides_escalados))]
+    }
+
+
 # ===== INICIO DEL SERVIDOR =====
 if __name__ == '__main__':
     # Crear directorios necesarios
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 SERVIDOR FLASK - CLASIFICADOR DE CELULARES")
-    print("="*60)
+    print("=" * 60)
     
     if not modelos_cargados:
         print("⚠️  ADVERTENCIA: Los modelos no están cargados.")
@@ -303,9 +487,10 @@ if __name__ == '__main__':
         print(f"📊 Distribución de gamas:")
         for gama, cantidad in distribucion_gamas.items():
             print(f"   - {gama}: {cantidad} dispositivos")
+        print(f"\n⚙️  Threshold de ambigüedad: {AMBIGUITY_THRESHOLD * 100}%")
     
     print(f"\n🌐 Servidor corriendo en: http://127.0.0.1:5000")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
     
     # Iniciar servidor en modo desarrollo
     app.run(debug=True, host='127.0.0.1', port=5000)
