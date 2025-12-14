@@ -463,6 +463,8 @@ document.addEventListener('DOMContentLoaded', function () {
             ? 'rgba(255, 152, 0, 1)'  // Naranja para ambiguo
             : 'rgba(33, 150, 243, 1)'; // Azul para claro
 
+        console.log(resultado.pca_usuario)
+
         graficoDispersion = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -515,12 +517,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             es_ambiguo: resultado.es_ambiguo
                         }],
                         backgroundColor: colorUsuario,
-                        pointRadius: 14,
-                        pointHoverRadius: 16,
-                        pointStyle: 'star',
+                        pointRadius: 10,
+                        pointHoverRadius: 14,
+                        pointStyle: 'circle',
                         borderColor: '#fff',
                         borderWidth: 3,
-                        order: 999
+                        order: 1000,
+                        clip: false
                     }
                 ]
             },

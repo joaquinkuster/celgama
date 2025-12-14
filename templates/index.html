@@ -52,13 +52,12 @@
           </div>
           <div class="form-group">
             <label for="num_cores">Número de núcleos</label>
-            <input type="number" id="num_cores" name="num_cores" min="1" max="16" required 
-                   placeholder="Ej: 8">
+            <input type="number" id="num_cores" name="num_cores" min="1" max="16" required placeholder="Ej: 8">
           </div>
           <div class="form-group">
             <label for="processor_speed">Velocidad del procesador (GHz)</label>
             <input type="number" id="processor_speed" name="processor_speed" step="0.1" min="0.5" max="4.0" required
-                   placeholder="Ej: 2.5">
+              placeholder="Ej: 2.5">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary" disabled>Anterior</button>
@@ -78,7 +77,7 @@
           <div class="form-group">
             <label for="battery_capacity">Capacidad de batería (mAh)</label>
             <input type="number" id="battery_capacity" name="battery_capacity" min="1000" max="10000" required
-                   placeholder="Ej: 4000">
+              placeholder="Ej: 4000">
           </div>
           <div class="checkbox-group">
             <input type="checkbox" id="fast_charging_available" name="fast_charging_available" value="1">
@@ -101,13 +100,12 @@
           </div>
           <div class="form-group">
             <label for="ram_capacity">Memoria RAM (GB)</label>
-            <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="32" required
-                   placeholder="Ej: 8">
+            <input type="number" id="ram_capacity" name="ram_capacity" min="1" max="32" required placeholder="Ej: 8">
           </div>
           <div class="form-group">
             <label for="internal_memory">Almacenamiento interno (GB)</label>
             <input type="number" id="internal_memory" name="internal_memory" min="8" max="1024" required
-                   placeholder="Ej: 128">
+              placeholder="Ej: 128">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -127,17 +125,17 @@
           <div class="form-group">
             <label for="screen_size">Tamaño de pantalla (pulgadas)</label>
             <input type="number" id="screen_size" name="screen_size" step="0.1" min="4.0" max="7.5" required
-                   placeholder="Ej: 6.5">
+              placeholder="Ej: 6.5">
           </div>
           <div class="form-group">
             <label for="resolution_width">Resolución horizontal (píxeles)</label>
             <input type="number" id="resolution_width" name="resolution_width" min="720" max="3840" required
-                   placeholder="Ej: 1080">
+              placeholder="Ej: 1080">
           </div>
           <div class="form-group">
             <label for="resolution_height">Resolución vertical (píxeles)</label>
             <input type="number" id="resolution_height" name="resolution_height" min="1280" max="2400" required
-                   placeholder="Ej: 2160">
+              placeholder="Ej: 2160">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -157,17 +155,17 @@
           <div class="form-group">
             <label for="num_rear_cameras">Número de cámaras traseras</label>
             <input type="number" id="num_rear_cameras" name="num_rear_cameras" min="1" max="5" required
-                   placeholder="Ej: 3">
+              placeholder="Ej: 3">
           </div>
           <div class="form-group">
             <label for="primary_camera_rear">Cámara principal trasera (MP)</label>
             <input type="number" id="primary_camera_rear" name="primary_camera_rear" min="8" max="200" required
-                   placeholder="Ej: 48">
+              placeholder="Ej: 48">
           </div>
           <div class="form-group">
             <label for="primary_camera_front">Cámara frontal (MP)</label>
             <input type="number" id="primary_camera_front" name="primary_camera_front" min="5" max="50" required
-                   placeholder="Ej: 16">
+              placeholder="Ej: 16">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -186,8 +184,7 @@
           </div>
           <div class="form-group">
             <label for="price">Precio en dólares (USD)</label>
-            <input type="number" id="price" name="price" min="50" max="5000" required
-                   placeholder="Ej: 350">
+            <input type="number" id="price" name="price" min="50" max="5000" required placeholder="Ej: 350">
           </div>
           <div class="form-navigation">
             <button type="button" class="btn btn-secondary prev-btn">Anterior</button>
@@ -213,13 +210,10 @@
 
       <!-- Gráficos en disposición de grid -->
       <div class="charts-grid">
-        <div class="chart-container">
+        <div class="chart-container" style="margin-bottom: 30px;">
           <h3>Comparación relativa por categoría</h3>
           <canvas id="chartDifRel"></canvas>
-        </div>
-
-        <div class="chart-container">
-          <h3>Distribución de dispositivos</h3>
+          <h3 style="margin-top: 20px;">Distribución de dispositivos</h3>
           <canvas id="chartDistribution"></canvas>
         </div>
 
@@ -233,15 +227,15 @@
       <div class="explanation">
         <h3><i class="fas fa-info-circle"></i> ¿Por qué esta clasificación?</h3>
         <p>
-          Basándonos en el análisis de <strong id="totalDispositivos">0</strong> dispositivos mediante 
+          Basándonos en el análisis de <strong id="totalDispositivos">0</strong> dispositivos mediante
           clustering K-Means, tu celular ha sido clasificado en la <strong id="explanationGama">Media</strong>.
         </p>
         <p>
           Los factores más determinantes en esta clasificación fueron: <span id="keyFactors">-</span>
         </p>
         <p>
-          <em>Esta clasificación se basa en patrones identificados en el dataset mediante algoritmos 
-          de aprendizaje no supervisado, considerando múltiples características técnicas del dispositivo.</em>
+          <em>Esta clasificación se basa en patrones identificados en el dataset mediante algoritmos
+            de aprendizaje no supervisado, considerando múltiples características técnicas del dispositivo.</em>
         </p>
       </div>
 

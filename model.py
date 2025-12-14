@@ -628,8 +628,8 @@ def main() -> None:
     balance_info = verificar_balance_clusters(labels)
     
     # 7.5. Re-balancear clusters si es necesario
-    if balance_info['desbalance'] > 0.25:  # Si desbalance > 25%
-        labels = rebalancear_clusters(X_scaled, kmeans, labels, target_balance=0.20)
+    if balance_info['es_balanceado']:  
+        labels = rebalancear_clusters(X_scaled, kmeans, labels, target_balance=0.20) # Re-balanceo con objetivo 20%
         # Recalcular balance después del re-balanceo
         balance_info = verificar_balance_clusters(labels)
     
